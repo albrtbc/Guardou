@@ -80,7 +80,7 @@ jobs:
           sbom: false
           tags: guardou:scan
           # A new value on every run rebuilds the apk upgrade layer with current packages.
-          build-args: APK_UPGRADE_KEY=${{ github.run_id }}
+          build-args: APK_UPGRADE_RUN=${{ github.run_id }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
 
       - name: Scan the image for vulnerabilities
@@ -146,7 +146,7 @@ jobs:
           provenance: mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: APK_UPGRADE_KEY=${{ github.run_id }}
+          build-args: APK_UPGRADE_RUN=${{ github.run_id }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
 
@@ -177,7 +177,7 @@ jobs:
           version="${TAG#v}"
           notes=$(printf '%s\n\n%s\n\n%s\n' \
             "Image: \`${REGISTRY}/${IMAGE_NAME}:${version}@${DIGEST}\`" \
-            "Signed with cosign (keyless, this workflow). Read docs/docs/administration/upgrading.mdx before upgrading." \
+            "Signed with cosign (keyless, this workflow). Read the [upgrade guide](https://github.com/albrtbc/Guardou/blob/main/docs/docs/administration/upgrade.mdx) before upgrading." \
             "Attached: the hardened docker-compose.yaml and example.env.")
           gh release create "$TAG" docker/docker-compose.yaml docker/example.env \
             --verify-tag --title "$TAG" --notes "$notes" --generate-notes
