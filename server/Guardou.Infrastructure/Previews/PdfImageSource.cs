@@ -8,6 +8,7 @@ internal sealed class PdfImageSource(StoragePaths paths) : IImageSource
 {
     private const string Extension = "pdf";
     private const string OutputRoot = "page";
+    private const string OutputExtension = "png";
 
     private readonly ExternalTool _renderer = new("pdftoppm");
 
@@ -16,12 +17,12 @@ internal sealed class PdfImageSource(StoragePaths paths) : IImageSource
         return extension.Equals(Extension, StringComparison.OrdinalIgnoreCase) && _renderer.IsAvailable;
     }
 
-    public async Task<SourceImage> ReadAsync(string path, CancellationToken cancellationToken)
+    public async Task<SourceImage> ReadAsync(string path, string extension, CancellationToken cancellationToken)
     {
         using ScratchDirectory scratch = new(paths.TemporaryDirectory);
         string root = scratch.Combine(OutputRoot);
         string edge = PreviewSizes.MaximumEdge(PreviewSize.Large).ToString(CultureInfo.InvariantCulture);
         await _renderer.RunAsync(["-png", "-singlefile", "-f", "1", "-l", "1", "-scale-to", edge, path, root], cancellationToken);
-        return new SourceImage(await File.ReadAllBytesAsync(root + ".png", cancellationToken), TiffOrientation.Normal);
+        return SourceImage.FromBuffer(await File.ReadAllBytesAsync(root + "." + OutputExtension, cancellationToken), OutputExtension, TiffOrientation.Normal);
     }
 }

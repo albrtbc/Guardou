@@ -10,11 +10,14 @@ internal static class EnvironmentVariableMap
         [SettingsVariables.TrashRetentionDays] = Override(nameof(SettingsOverrides.TrashRetentionDays)),
         [SettingsVariables.UploadConcurrency] = Override(nameof(SettingsOverrides.UploadConcurrency)),
         [SettingsVariables.UploadChunkSizeMb] = Override(nameof(SettingsOverrides.UploadChunkSizeMb)),
+        [SettingsVariables.MaxFileSizeMb] = Override(nameof(SettingsOverrides.MaxFileSizeMb)),
+        [SettingsVariables.MinFreeSpaceMb] = Override(nameof(SettingsOverrides.MinFreeSpaceMb)),
         [SettingsVariables.OidcIssuer] = Override(nameof(SettingsOverrides.OidcIssuer)),
         [SettingsVariables.OidcClientId] = Override(nameof(SettingsOverrides.OidcClientId)),
         [SettingsVariables.OidcClientSecret] = Override(nameof(SettingsOverrides.OidcClientSecret)),
         [SettingsVariables.OidcScopes] = Override(nameof(SettingsOverrides.OidcScopes)),
         [SettingsVariables.OidcUserClaim] = Override(nameof(SettingsOverrides.OidcUserClaim)),
+        [TrustedProxies.Variable] = TrustedProxies.Key,
     };
 
     private static string Override(string property)

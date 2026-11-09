@@ -1,6 +1,8 @@
 using Guardou.Application.Files;
 using Guardou.Application.Quotas;
+using Guardou.Application.Settings;
 using Guardou.Domain.Files;
+using Guardou.Domain.Settings;
 
 namespace Guardou.Application.Uploads;
 
@@ -12,6 +14,7 @@ public sealed class UploadSessions
     private readonly OwnedItems _items;
     private readonly IItemStore _store;
     private readonly StorageReservations _reservations;
+    private readonly EffectiveSettings<ServerSettings> _settings;
     private readonly TimeProvider _time;
 
     internal UploadSessions(
@@ -21,6 +24,7 @@ public sealed class UploadSessions
         OwnedItems items,
         IItemStore store,
         StorageReservations reservations,
+        EffectiveSettings<ServerSettings> settings,
         TimeProvider time)
     {
         _uploads = uploads;
@@ -29,6 +33,7 @@ public sealed class UploadSessions
         _items = items;
         _store = store;
         _reservations = reservations;
+        _settings = settings;
         _time = time;
     }
 
@@ -37,7 +42,7 @@ public sealed class UploadSessions
         ItemPath target = await _items.FindActiveFolderAsync(ownerId, request.FolderId, cancellationToken);
         UploadDestination destination = UploadDestination.Of(
             target.Item.Id,
-            UploadPath.FolderNames(request.RelativePath),
+            UploadPath.FolderNames(request.RelativePath, target.Ancestors.Count),
             ItemPlacement.ValidName(request.FileName));
         await EnsureNoActiveUploadAsync(destination, cancellationToken);
         if (await IsTakenAsync(target.Item, destination, cancellationToken))
@@ -51,6 +56,7 @@ public sealed class UploadSessions
             }
         }
 
+        await EnsureNotTooLargeAsync(request.Size, cancellationToken);
         return await _reservations.ReserveAsync(
             ownerId,
             request.Size,
@@ -72,6 +78,11 @@ public sealed class UploadSessions
         return upload?.OwnerId == ownerId;
     }
 
+    public Task<bool> HasRoomToWriteAsync(long bytes, CancellationToken cancellationToken)
+    {
+        return _reservations.HasRoomToWriteAsync(bytes, cancellationToken);
+    }
+
     public async Task RecordWriteAsync(string id, CancellationToken cancellationToken)
     {
         Upload? upload = await _uploads.FindAsync(id, cancellationToken);
@@ -85,10 +96,28 @@ public sealed class UploadSessions
         UploadRequest request,
         CancellationToken cancellationToken)
     {
+        await EnsureBelowTheUploadCapAsync(ownerId, cancellationToken);
         string id = await _content.CreateAsync(request.Size, cancellationToken);
         _uploads.Add(Upload.Create(id, ownerId, destination, request.Size, request.Modified, _time.GetUtcNow()));
         await _uploads.SaveAsync(cancellationToken);
         return new UploadSession(id);
+    }
+
+    private async Task EnsureNotTooLargeAsync(long size, CancellationToken cancellationToken)
+    {
+        if ((await _settings.GetAsync(cancellationToken)).MaxFileSizeMb is { } maxFileSizeMb && size > StoragePolicy.BytesOf(maxFileSizeMb))
+        {
+            throw new FileTooLargeException(maxFileSizeMb);
+        }
+    }
+
+    private async Task EnsureBelowTheUploadCapAsync(string ownerId, CancellationToken cancellationToken)
+    {
+        DateTimeOffset since = Upload.ActiveSince(_time.GetUtcNow());
+        if (await _uploads.CountActiveOfOwnerAsync(ownerId, since, cancellationToken) >= StoragePolicy.MaximumUploadsInProgress)
+        {
+            throw new TooManyUploadsException();
+        }
     }
 
     private async Task EnsureNoActiveUploadAsync(UploadDestination destination, CancellationToken cancellationToken)

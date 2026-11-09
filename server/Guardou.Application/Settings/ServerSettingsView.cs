@@ -5,4 +5,6 @@ public sealed record ServerSettingsView(
     int TrashRetentionDays,
     int UploadConcurrency,
     int UploadChunkSizeMb,
+    int? MaxFileSizeMb,
+    int MinFreeSpaceMb,
     IReadOnlyList<LockedSetting> Locked);

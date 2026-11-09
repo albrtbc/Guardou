@@ -2,13 +2,50 @@ name: guardou
 
 services:
   guardou:
-    image: ghcr.io/guardouapp/guardou:latest
+    # The security-hardened fork. To run upstream's image instead, use
+    # ghcr.io/guardouapp/guardou:<version>.
+    # Pin a version, never :latest: the server migrates the database on start and the
+    # migrations cannot be undone, so an unattended upgrade could cross a breaking change.
+    # For a stricter pin, add the image digest, as in <version>@sha256:<digest>.
+    image: ghcr.io/albrtbc/guardou:0.10.0-fork.1
     container_name: guardou
     env_file:
       - .env
     ports:
-      - "2286:2286"
+      # Published on this host only. A bare "2286:2286" listens on every interface, and
+      # Docker's port rules bypass the host firewall. Put a reverse proxy in front for
+      # anything beyond this machine.
+      - "127.0.0.1:2286:2286"
     volumes:
       - ${DATA_PATH}:/data
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
+    # Give the server time for its 30 s graceful shutdown, so running tasks are not killed
+    # mid-way (Docker waits 10 s by default).
+    stop_grace_period: 35s
+    security_opt:
+      # No process in the container can gain privileges through setuid binaries.
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      # The entrypoint starts as root, remaps the guardou user to PUID/PGID, then drops to
+      # that user. Nothing else needs a capability: the app itself runs without any.
+      - CHOWN # chown /data and the home folder to PUID:PGID, as find and usermod do
+      - DAC_OVERRIDE # root must enter and read folders owned by another user (mode 0700)
+      - SETUID # su-exec drops from root to the guardou user
+      - SETGID # su-exec sets the group and supplementary groups
+      # Not DAC_READ_SEARCH, though it would be enough for the folders: it is what lets
+      # open_by_handle_at pass Docker's default seccomp profile (the "Shocker" escape),
+      # and it would be granted to a root process that has the host's /data mounted.
+    # Limits keep one bad upload or a burst of preview work from taking the whole host.
+    # Uncomment and size them to the machine. Previews of large photos and videos are the
+    # heaviest work, so test the memory limit with your biggest files.
+    # mem_limit: 2g
+    # cpus: 2
+    # pids_limit: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

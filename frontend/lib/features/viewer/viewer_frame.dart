@@ -15,12 +15,16 @@ class ViewerFrame extends ConsumerWidget {
     required this.source,
     required this.leading,
     this.overlays = const [],
+    this.actions = const [],
+    this.footer,
   });
 
   final ItemEntry entry;
   final FileSource source;
   final Widget leading;
   final List<Widget> overlays;
+  final List<Widget> actions;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,10 +32,12 @@ class ViewerFrame extends ConsumerWidget {
     final browser = ref.watch(browserFilesProvider);
 
     return Scaffold(
+      bottomNavigationBar: footer,
       appBar: AppBar(
         leading: leading,
         title: Text(entry.name, overflow: TextOverflow.ellipsis),
         actions: [
+          ...actions,
           IconButton(
             tooltip: l10n.actionDownload,
             onPressed: () => browser.download(source.downloadUri(entry.id)),

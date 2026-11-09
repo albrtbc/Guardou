@@ -1,0 +1,94 @@
+name: Docker build
+
+# Builds, starts and scans the image on pull requests without pushing it, so a broken
+# Dockerfile, a runtime mismatch or a fixable critical vulnerability is caught before a
+# release. Publishing is docker-publish.yml, which runs on tags and has the registry
+# permissions this workflow does not.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - docker/**
+      - api/**
+      - frontend/**
+      - server/**
+      - .github/workflows/docker-build.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, smoke test and scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      # linux/amd64 only: the arm64 build runs under QEMU and is left to the release.
+      - name: Build the image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: guardou:scan
+          # A new value on every run rebuilds the apk upgrade layer with current packages.
+          build-args: APK_UPGRADE_KEY=${{ github.run_id }}
+          # The registry cache is the one the release pushes. It is read-only here, and is
+          # skipped with a warning if the package is not public.
+          cache-from: |
+            type=registry,ref=ghcr.io/albrtbc/guardou:buildcache
+            type=gha
+          cache-to: type=gha,mode=max
+
+      # Same restrictions as docker/docker-compose.yaml, with a non-default PUID/PGID so the
+      # entrypoint really rewrites /etc and chowns the data, so a missing capability shows up
+      # here. The restart covers the second start, when the app's own 0700 folders exist.
+      - name: Start the image and wait for /health
+        run: |
+          wait_healthy() {
+            for _ in $(seq 1 60); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:2286/health || true)
+              if [ "$code" = 200 ]; then
+                echo "/health returned 200."
+                return 0
+              fi
+              if [ "$(docker inspect -f '{{.State.Running}}' guardou-smoke)" != true ]; then
+                break
+              fi
+              sleep 2
+            done
+            echo "::error::/health did not return 200 within 120 s."
+            docker logs guardou-smoke
+            return 1
+          }
+          docker run -d --name guardou-smoke -p 127.0.0.1:2286:2286 \
+            -e PUID=1234 -e PGID=4321 \
+            --security-opt no-new-privileges:true \
+            --cap-drop ALL --cap-add CHOWN --cap-add DAC_OVERRIDE --cap-add SETUID --cap-add SETGID \
+            guardou:scan
+          wait_healthy
+          docker restart guardou-smoke
+          wait_healthy
+
+      - name: Stop the container
+        if: always()
+        run: docker rm -f guardou-smoke
+
+      - name: Scan the image for vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: guardou:scan
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+          hide-progress: true

@@ -1,7 +1,10 @@
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using Guardou.Application.Files;
+using Guardou.Application.Shares;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Guardou.IntegrationTests;
 
@@ -86,6 +89,131 @@ public sealed class DownloadsTests : SignedInTests
         Assert.Equal("download.zip", response.Content.Headers.ContentDisposition?.FileNameStar);
         Assert.Equal(["a.txt", "b.txt"], await EntriesAsync(response));
         Assert.Equal(HttpStatusCode.BadRequest, empty.StatusCode);
+    }
+
+    [Fact]
+    public async Task ArchivesEachSelectedItemOnce()
+    {
+        ItemEntry docs = await Client.CreateFolderEntryAsync(ItemsApi.Root, "docs");
+        ItemEntry inner = await Client.CreateFolderEntryAsync(docs.Id, "inner");
+        ItemEntry inside = await Client.UploadEntryAsync(inner.Id, "a.txt", "a");
+        ItemEntry other = await Client.UploadEntryAsync(ItemsApi.Root, "other.txt", "o");
+        string query = string.Join('&', new[] { docs.Id, docs.Id, inside.Id, other.Id, other.Id, inner.Id }.Select(id => $"ids={id}"));
+
+        HttpResponseMessage response = await Client.GetAsync($"/api/items/archive?{query}", CancellationToken);
+
+        Assert.Equal(["docs/", "docs/inner/", "docs/inner/a.txt", "other.txt"], await EntriesAsync(response));
+    }
+
+    [Fact]
+    public async Task NamesTheArchiveAfterTheSingleFolderLeftBySelectionCleanup()
+    {
+        ItemEntry docs = await Client.CreateFolderEntryAsync(ItemsApi.Root, "docs");
+        ItemEntry file = await Client.UploadEntryAsync(docs.Id, "a.txt", "a");
+
+        HttpResponseMessage response = await Client.GetAsync($"/api/items/archive?ids={docs.Id}&ids={file.Id}", CancellationToken);
+
+        Assert.Equal("docs.zip", response.Content.Headers.ContentDisposition?.FileNameStar);
+        Assert.Equal(["docs/", "docs/a.txt"], await EntriesAsync(response));
+    }
+
+    [Fact]
+    public async Task RefusesArchivesWithoutWaitingWhenAllSlotsAreTaken()
+    {
+        ItemEntry docs = await Client.CreateFolderEntryAsync(ItemsApi.Root, "docs");
+        await Client.UploadEntryAsync(docs.Id, "a.txt", "a");
+        string token = await ShareTokenAsync(docs.Id);
+        using HttpClient anonymous = Factory.CreateClient();
+        using ArchiveSlotsTaken taken = new(Factory, ArchiveAudience.SignedIn, ArchiveSlots.SignedInCapacity);
+
+        HttpResponseMessage folder = await Client.GetAsync($"/api/items/{docs.Id}/download", CancellationToken);
+        HttpResponseMessage selection = await Client.GetAsync($"/api/items/archive?ids={docs.Id}", CancellationToken);
+        HttpResponseMessage shared = await anonymous.GetAsync($"/api/shares/{token}/items/{docs.Id}/download", CancellationToken);
+        taken.ReleaseOne();
+        HttpResponseMessage retried = await Client.GetAsync($"/api/items/{docs.Id}/download", CancellationToken);
+
+        Assert.All([folder, selection], AssertBusy);
+        Assert.Equal(HttpStatusCode.OK, shared.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, retried.StatusCode);
+    }
+
+    [Fact]
+    public async Task ShareLinkArchivesHaveTheirOwnSmallerPool()
+    {
+        ItemEntry docs = await Client.CreateFolderEntryAsync(ItemsApi.Root, "docs");
+        await Client.UploadEntryAsync(docs.Id, "a.txt", "a");
+        string token = await ShareTokenAsync(docs.Id);
+        using HttpClient anonymous = Factory.CreateClient();
+        using ArchiveSlotsTaken taken = new(Factory, ArchiveAudience.Anonymous, ArchiveSlots.AnonymousCapacity);
+
+        HttpResponseMessage shared = await anonymous.GetAsync($"/api/shares/{token}/items/{docs.Id}/download", CancellationToken);
+        HttpResponseMessage owner = await Client.GetAsync($"/api/items/{docs.Id}/download", CancellationToken);
+        taken.ReleaseOne();
+        HttpResponseMessage retried = await anonymous.GetAsync($"/api/shares/{token}/items/{docs.Id}/download", CancellationToken);
+
+        AssertBusy(shared);
+        Assert.Equal(HttpStatusCode.OK, owner.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, retried.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReleasesTheSlotAfterADownloadAndAfterAFailure()
+    {
+        ItemEntry docs = await Client.CreateFolderEntryAsync(ItemsApi.Root, "docs");
+        await Client.UploadEntryAsync(docs.Id, "a.txt", "a");
+
+        for (int round = 0; round < ArchiveSlots.SignedInCapacity + 1; round++)
+        {
+            HttpResponseMessage response = await Client.GetAsync($"/api/items/{docs.Id}/download", CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            await response.Content.ReadAsByteArrayAsync(CancellationToken);
+        }
+
+        foreach (string blob in Directory.EnumerateFiles(Factory.FilesDirectory, "*", SearchOption.AllDirectories))
+        {
+            File.Delete(blob);
+        }
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => Client.GetAsync($"/api/items/{docs.Id}/download", CancellationToken));
+
+        using ArchiveSlotsTaken all = new(Factory, ArchiveAudience.SignedIn, ArchiveSlots.SignedInCapacity);
+    }
+
+    private static void AssertBusy(HttpResponseMessage response)
+    {
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal(TimeSpan.FromSeconds(ArchiveBusyException.RetryAfterSeconds), response.Headers.RetryAfter?.Delta);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    private async Task<string> ShareTokenAsync(string id)
+    {
+        HttpResponseMessage response = await Client.PutAsync($"/api/items/{id}/share", null, CancellationToken);
+        response.EnsureSuccessStatusCode();
+        string url = (await response.Content.ReadFromJsonAsync<ShareLink>(HttpClientExtensions.JsonOptions, CancellationToken))?.Url ?? string.Empty;
+        return url[(url.LastIndexOf('/') + 1)..];
+    }
+
+    private sealed class ArchiveSlotsTaken : IDisposable
+    {
+        private readonly List<IDisposable> _slots;
+
+        public ArchiveSlotsTaken(TestServerFactory factory, ArchiveAudience audience, int count)
+        {
+            ArchiveSlots slots = factory.Services.GetRequiredService<ArchiveSlots>();
+            _slots = Enumerable.Range(0, count).Select(_ => slots.Acquire(audience)).ToList();
+        }
+
+        public void ReleaseOne()
+        {
+            _slots[0].Dispose();
+            _slots.RemoveAt(0);
+        }
+
+        public void Dispose()
+        {
+            _slots.ForEach(slot => slot.Dispose());
+        }
     }
 
     private static async Task<IReadOnlyList<string>> EntriesAsync(HttpResponseMessage response)

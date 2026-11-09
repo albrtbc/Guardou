@@ -9,4 +9,37 @@ All Guardou settings are available through the Admin Panel at:
 
 `http://your-instance:2286/admin/settings`
 
-If you prefer environment variables, they are documented in the [`example.env`](https://github.com/GuardouApp/Guardou/releases/latest/download/example.env) file provided with each release.
+If you prefer environment variables, they are documented in the [`example.env`](https://github.com/albrtbc/Guardou/releases/latest/download/example.env) file provided with each release.
+
+A setting given as an environment variable overrides the value in the Admin Panel.
+
+---
+
+## Reverse proxy
+
+### `TRUSTED_PROXIES`
+
+A comma-separated list of the IP addresses or CIDR ranges of the reverse proxies in front of Guardou, for example `172.18.0.1,10.0.0.0/24`. Not set by default, which trusts no proxy apart from loopback addresses.
+
+- List only the direct proxies, the ones that connect to Guardou. Never list a whole network that also holds other containers.
+- Only these addresses may set `X-Forwarded-For` and `X-Forwarded-Proto`, and Guardou follows one hop.
+- Every entry must be an IP address or a CIDR range, with all four parts for IPv4 (`172.18.0.1`, not `172.18`). Guardou doesn't start if an entry is invalid.
+- It is not an Admin Panel setting. Set it in the environment.
+
+See [Reverse Proxy](./reverse-proxy.mdx) for what to put in it and why.
+
+### `AllowedHosts`
+
+Not a Guardou variable, but ASP.NET Core's host filtering, which Guardou uses. A list of host names separated by `;`. The default is `*`. Keep `127.0.0.1` in the list, because the container's health check calls it, and `localhost`, so that `http://localhost:2286` keeps working. See [Reverse Proxy](./reverse-proxy.mdx#allowedhosts).
+
+---
+
+## Uploads and storage
+
+### `MAX_FILE_SIZE_MB`
+
+The largest file a user can upload, in MB. Larger uploads are refused with `413`. Not set by default, which means no limit. Valid values are 1 to 1,048,576.
+
+### `MIN_FREE_SPACE_MB`
+
+The free space the server keeps, in MB. An upload or a copy that would leave less is refused with `507`. The bytes still pending in unfinished uploads of all users count as used. The default is `1024`. Valid values are 0 to 1,048,576, where 0 keeps no reserve.

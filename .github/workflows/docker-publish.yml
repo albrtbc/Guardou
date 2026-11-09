@@ -13,20 +13,24 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: guardouapp/guardou
+  IMAGE_NAME: albrtbc/guardou
   TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
-  publish:
+  # The scan runs with a read-only token and no registry credentials for pushing, apart from
+  # reading the build cache. The publish job, which can push and sign, starts only if the
+  # image passes, so a vulnerable image never gets a tag.
+  scan:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
-      id-token: write
+      packages: read
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ env.TAG }}
           fetch-depth: 0
@@ -40,14 +44,72 @@ jobs:
           fi
 
       - name: Require the tag to match the project version
+        # Fork releases are tagged vX.Y.Z-fork.N on top of upstream's X.Y.Z.
         run: |
           tag="${TAG#v}"
+          tag="${tag%%-fork.*}"
           server=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' server/Directory.Build.props)
           frontend=$(sed -n 's/^version: *\([^ #]*\).*/\1/p' frontend/pubspec.yaml)
           if [ "$tag" != "$server" ] || [ "$tag" != "$frontend" ]; then
             echo "::error::Tag ${tag}, server ${server} and frontend ${frontend} must be equal."
             exit 1
           fi
+
+      # The publish job builds exactly this commit, even if the tag moves in between.
+      - name: Record the commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Log into ${{ env.REGISTRY }}
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The scan covers the amd64 build; the arm64 image has the same packages. This job writes
+      # no cache: the Actions cache needs no permission to write, so the publish job must not
+      # read anything this job could have changed. It reads only the registry cache, which
+      # only the publish job can write.
+      - name: Build the image for scanning
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          provenance: false
+          sbom: false
+          tags: guardou:scan
+          # A new value on every run rebuilds the apk upgrade layer with current packages.
+          build-args: APK_UPGRADE_KEY=${{ github.run_id }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+
+      - name: Scan the image for vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: guardou:scan
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+          hide-progress: true
+
+  publish:
+    needs: scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ needs.scan.outputs.sha }}
 
       - name: Install cosign
         uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
@@ -82,8 +144,11 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          sbom: true
+          provenance: mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: APK_UPGRADE_KEY=${{ github.run_id }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
 

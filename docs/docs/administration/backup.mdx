@@ -26,3 +26,60 @@ Generated files and folders that you can safely exclude from the backup:
 * `thumbs/*`
 
 Additionally, follow the [3-2-1](https://www.backblaze.com/blog/the-3-2-1-backup-strategy/) backup strategy.
+
+---
+
+## Take a consistent backup
+
+The database and the files must come from the same moment. Copying a running instance file by file can give you a database that doesn't match the files. Use one of these:
+
+- **Stop the container.** The simplest way. Run `docker compose stop`, copy the data folder, then `docker compose start`. Guardou takes up to 30 seconds to stop, so that running tasks can finish.
+- **Take a filesystem snapshot** of the data folder (Btrfs, ZFS, LVM) while the container runs, and back up the snapshot.
+- **Use `sqlite3 .backup` for the databases,** then copy the files. Copy the databases first, so that files uploaded in between are only extra:
+
+  ```bash
+  sqlite3 "$DATA_PATH/db/app.db" ".backup '/backups/app.db'"
+  sqlite3 "$DATA_PATH/db/index.db" ".backup '/backups/index.db'"
+  ```
+
+  `$DATA_PATH` is the value from your `.env` file. Run these commands on the host, as the user that owns the data (`PUID`) or as root: the Guardou image doesn't include `sqlite3`. Don't copy `app.db` with `cp` while Guardou runs: the changes still in `app.db-wal` would be missing.
+
+---
+
+## Restore
+
+1. Stop the container: `docker compose stop`.
+2. Move the current data folder aside, or empty it.
+3. Put the backup in the data folder, with the same layout as above. If you restore a copy made with `sqlite3 .backup`, make sure there are no old `app.db-wal` or `app.db-shm` files next to it.
+4. Start the container: `docker compose up -d`. On start, it sets the owner of the data folder to `PUID` and `PGID`.
+5. Check the logs with `docker compose logs guardou`, then sign in and open a few files.
+
+If you excluded `db/index.db` and `thumbs/*`, Guardou generates them again.
+
+---
+
+## Protect your backups
+
+:::warning[Encrypt them]
+
+`app.db` holds the keys that sign user sessions, and the tokens of all share links. Anyone who gets a copy can sign in as any user and open every shared link. The stored files are not encrypted either.
+
+Encrypt backups before they leave the machine, for example with a tool that encrypts by default (such as restic or borg), or with `age` or `gpg`.
+
+:::
+
+---
+
+## Before every upgrade
+
+Back up before every upgrade, and keep that backup until the new version has proven itself. Guardou migrates the database when it starts, and migrations can't be undone. The only way back to an older version is to restore the backup.
+
+Don't use unattended updaters such as Watchtower, and don't use the `latest` tag. An automatic upgrade can cross a migration without a backup. Pin the image to a version and upgrade by hand. See [Upgrading](./upgrading.mdx).
+
+---
+
+## File permissions
+
+The container runs with `umask 077`. New files in the data folder are created with mode `0600` and new folders with `0700`, owned by `PUID` and `PGID`. Existing files and folders keep their modes.
+
+A backup job that runs on the host as a different user can't read the new files. Run it as `PUID` or as root. If a job used to work and now skips files, this is the first thing to check.

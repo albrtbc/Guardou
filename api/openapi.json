@@ -74,6 +74,21 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -120,6 +135,21 @@
           },
           "403": {
             "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/json": {
                 "schema": {
@@ -633,6 +663,36 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -762,6 +822,36 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -1494,6 +1584,36 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "507": {
+            "description": "Insufficient Storage",
             "content": {
               "application/json": {
                 "schema": {
@@ -3318,6 +3438,21 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -3441,6 +3576,21 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -3478,6 +3628,36 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -3588,6 +3768,21 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -3647,6 +3842,21 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/json": {
                 "schema": {
@@ -4494,6 +4704,51 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "507": {
+            "description": "Insufficient Storage",
             "content": {
               "application/json": {
                 "schema": {
@@ -5355,7 +5610,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "displayName": {
             "type": "string"
@@ -5844,6 +6100,16 @@
             "type": "integer",
             "format": "int32",
             "default": 64
+          },
+          "maxFileSizeMb": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "minFreeSpaceMb": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1024
           }
         }
       },
@@ -5853,6 +6119,8 @@
           "trashRetentionDays",
           "uploadConcurrency",
           "uploadChunkSizeMb",
+          "maxFileSizeMb",
+          "minFreeSpaceMb",
           "locked"
         ],
         "type": "object",
@@ -5870,6 +6138,15 @@
             "format": "int32"
           },
           "uploadChunkSizeMb": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxFileSizeMb": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "minFreeSpaceMb": {
             "type": "integer",
             "format": "int32"
           },

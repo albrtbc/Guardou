@@ -1,3 +1,4 @@
+using System.Globalization;
 using Guardou.Application.Files;
 using Guardou.Application.Quotas;
 using Guardou.Application.Search;
@@ -20,13 +21,23 @@ internal sealed partial class ProblemDetailsExceptionHandler(
     public ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         int statusCode = StatusCodeOf(exception);
-        bool isServerError = statusCode >= StatusCodes.Status500InternalServerError;
+        bool isServerError = statusCode >= StatusCodes.Status500InternalServerError
+            && exception is not (InsufficientStorageException or ArchiveBusyException);
         if (isServerError)
         {
-            LogUnhandledException(exception, httpContext.Request.Method, httpContext.Request.Path);
+            LogUnhandledException(exception, httpContext.Request.Method, RequestPathRedaction.Redact(httpContext.Request.Path));
+        }
+        else if (exception is InsufficientStorageException)
+        {
+            LogInsufficientStorage(httpContext.Request.Method, RequestPathRedaction.Redact(httpContext.Request.Path));
         }
 
         httpContext.Response.StatusCode = statusCode;
+        if (exception is ArchiveBusyException)
+        {
+            httpContext.Response.Headers.RetryAfter = ArchiveBusyException.RetryAfterSeconds.ToString(CultureInfo.InvariantCulture);
+        }
+
         return problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
@@ -53,6 +64,26 @@ internal sealed partial class ProblemDetailsExceptionHandler(
             problem.Extensions[CodesExtension] = new[] { QuotaExceededException.Code };
         }
 
+        if (exception is FileTooLargeException)
+        {
+            problem.Extensions[CodesExtension] = new[] { FileTooLargeException.Code };
+        }
+
+        if (exception is InsufficientStorageException)
+        {
+            problem.Extensions[CodesExtension] = new[] { InsufficientStorageException.Code };
+        }
+
+        if (exception is TooManyUploadsException)
+        {
+            problem.Extensions[CodesExtension] = new[] { TooManyUploadsException.Code };
+        }
+
+        if (exception is ArchiveTooLargeException)
+        {
+            problem.Extensions[CodesExtension] = new[] { ArchiveTooLargeException.Code };
+        }
+
         return problem;
     }
 
@@ -75,10 +106,18 @@ internal sealed partial class ProblemDetailsExceptionHandler(
             UploadNotFoundException => StatusCodes.Status404NotFound,
             UploadInProgressException => StatusCodes.Status409Conflict,
             QuotaExceededException => StatusCodes.Status413PayloadTooLarge,
+            FileTooLargeException => StatusCodes.Status413PayloadTooLarge,
+            InsufficientStorageException => StatusCodes.Status507InsufficientStorage,
+            TooManyUploadsException => StatusCodes.Status429TooManyRequests,
+            ArchiveTooLargeException => StatusCodes.Status413PayloadTooLarge,
+            ArchiveBusyException => StatusCodes.Status503ServiceUnavailable,
             _ => StatusCodes.Status500InternalServerError,
         };
     }
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The request {Method} {Path} was refused: the server is short of free space.")]
+    private partial void LogInsufficientStorage(string method, string path);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "The request {Method} {Path} failed.")]
-    private partial void LogUnhandledException(Exception exception, string method, PathString path);
+    private partial void LogUnhandledException(Exception exception, string method, string path);
 }

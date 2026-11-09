@@ -5,6 +5,9 @@
 </p>
 <br/>
 
+> [!NOTE]
+> **This is a fork.** `albrtbc/Guardou` is a fork of [GuardouApp/Guardou](https://github.com/GuardouApp/Guardou) with security hardening for self-hosted use.
+
 ## About
 
 Guardou is a self-hosted file storage solution. Designed to be a simple alternative for users who want to store and organize some files through a simple web ui.
@@ -13,21 +16,6 @@ Guardou is a self-hosted file storage solution. Designed to be a simple alternat
 - Multiple users
 - SSO Support
 - URL sharing
-
-## Features
-
-| Feature                    | Status  |
-|----------------------------|---------|
-| Multiple Users             | Yes     | 
-| Sharing                    | Yes*    |
-| OIDC-Based SSO             | Yes     |
-| Resumable Uploads          | Yes     |
-| Quotas                     | Planned |
-| Real Time Updates          | Planned |
-| Document Editing           | TBD     |
-| Native Android & iOS Apps  | Planned |
-
-\* Read-only sharing is available through URLs and direct shares. Edit access is planned to be added soon, in the form of collaborative spaces.
 
 ## Getting Started
 
@@ -48,6 +36,6 @@ Guardou is in early-stage development. Breaking changes can happen. For this rea
 
 If you decide to use it, follow the [3-2-1](https://www.backblaze.com/blog/the-3-2-1-backup-strategy/) backup strategy.
 
-## AI Disclaimer
+## AI Usage
 
-Guardou uses AI-assisted code, with a careful approach to ensure code quality. We understand this may be a dealbreaker for some. Further details on what type of AI usage is allowed are explained in [CONTRIBUTING.md](CONTRIBUTING.md).
+This fork is developed with extensive AI assistance. Every change still has to meet the same bar before it is merged: tests, a green CI and a review. The rules are in [CONTRIBUTING.md](CONTRIBUTING.md).

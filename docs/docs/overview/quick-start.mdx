@@ -23,9 +23,17 @@ Once you've tried it, you might want to explore a more complex setup.
 
 Create a new folder to hold the necessary files.
 
-Download the most recent [`docker-compose.yaml`](https://github.com/GuardouApp/Guardou/releases/latest/download/docker-compose.yaml) into it.
+Download the most recent [`docker-compose.yaml`](https://github.com/albrtbc/Guardou/releases/latest/download/docker-compose.yaml) into it.
 
-Download the most recent [`example.env`](https://github.com/GuardouApp/Guardou/releases/latest/download/example.env) into it.
+Download the most recent [`example.env`](https://github.com/albrtbc/Guardou/releases/latest/download/example.env) into it.
+
+The compose file uses the image `ghcr.io/albrtbc/guardou`, pinned to a version. It is hardened by default:
+
+- The port is published on `127.0.0.1` only, so the app is not reachable from other machines until you put a [reverse proxy](../administration/reverse-proxy.mdx) in front of it.
+- The container runs with `no-new-privileges` and drops all Linux capabilities except `CHOWN`, `DAC_OVERRIDE`, `SETUID` and `SETGID`, which its entrypoint needs. Never add `DAC_READ_SEARCH`: it allows a known container escape.
+- It rotates its logs and gives the server 35 seconds to stop, so running tasks can finish.
+
+Keep the version tag. Don't switch to `latest`: the server migrates the database when it starts, and migrations can't be undone. See [Upgrading](../administration/upgrading.mdx).
 
 ### Step 2 - Populate custom values
 
@@ -52,8 +60,29 @@ docker compose up -d
 
 ### Step 4 - Create the first user
 
+:::warning[Create the admin before anyone else can reach the app]
+
+The first person to open the app creates the admin account. Registration is closed once a user exists.
+
+Do this step before you expose Guardou through a reverse proxy or on your network. On a remote server, you can reach the app through an SSH tunnel: `ssh -L 2286:127.0.0.1:2286 your-server`, then open http://localhost:2286.
+
+:::
+
 Navigate to http://localhost:2286 and create the admin account.
 
 You should be redirected to the initial page.
 
 ![Initial Page](./img/homescreen.jpg)
+
+Instead of the web page, you can create the admin from the command line. The command asks for the password, and also closes the registration:
+
+```bash
+docker compose exec guardou guardou user set <username> --email <email> --admin
+```
+
+The same command gives the admin role to an existing user, and changes their password.
+
+### Next steps
+
+- Put Guardou behind a [reverse proxy](../administration/reverse-proxy.mdx) with TLS before you use it outside your machine.
+- Set up [backups](../administration/backup.mdx).

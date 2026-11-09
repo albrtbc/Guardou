@@ -4,6 +4,8 @@ import 'browser_location_stub.dart' if (dart.library.js_interop) 'browser_locati
 
 abstract interface class BrowserLocation {
   void assign(Uri uri);
+
+  void open(Uri uri);
 }
 
 final browserLocationProvider = Provider<BrowserLocation>((ref) => createBrowserLocation());

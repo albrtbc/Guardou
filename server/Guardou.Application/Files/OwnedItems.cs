@@ -1,8 +1,9 @@
 using Guardou.Domain.Files;
+using Microsoft.Extensions.Logging;
 
 namespace Guardou.Application.Files;
 
-internal sealed class OwnedItems(IItemStore store)
+internal sealed partial class OwnedItems(IItemStore store, ILogger<OwnedItems> logger)
 {
     public const string RootAlias = "root";
 
@@ -26,9 +27,16 @@ internal sealed class OwnedItems(IItemStore store)
     {
         Item? item = await store.FindAsync(ownerId, id, cancellationToken);
         List<Item> ancestors = [];
+        HashSet<Guid> visited = [];
         Item? current = item;
         while (current is { Trashed: null, ParentId: { } parentId })
         {
+            if (!visited.Add(current.Id) || ancestors.Count >= TreeLimits.MaximumWalkDepth)
+            {
+                LogBrokenAncestry(id);
+                return null;
+            }
+
             current = await store.FindAsync(ownerId, parentId, cancellationToken);
             if (current is not null)
             {
@@ -84,4 +92,7 @@ internal sealed class OwnedItems(IItemStore store)
     {
         return new ItemNotFoundException($"The item '{reference}' does not exist.");
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The ancestors of item {ItemId} loop back on themselves or are deeper than the limit, so the item is treated as not found.")]
+    private partial void LogBrokenAncestry(Guid itemId);
 }

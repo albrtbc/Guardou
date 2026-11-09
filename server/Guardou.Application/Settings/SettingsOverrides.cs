@@ -12,6 +12,10 @@ public sealed class SettingsOverrides
 
     public int? UploadChunkSizeMb { get; set; }
 
+    public int? MaxFileSizeMb { get; set; }
+
+    public int? MinFreeSpaceMb { get; set; }
+
     public string? OidcIssuer { get; set; }
 
     public string? OidcClientId { get; set; }

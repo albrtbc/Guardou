@@ -49,9 +49,14 @@ public sealed class Upload
         return new Upload(id, ownerId, destination.FolderId, destination.FolderPath, destination.Name, size, modified, now);
     }
 
+    public static DateTimeOffset ActiveSince(DateTimeOffset now)
+    {
+        return now - ActiveWindow;
+    }
+
     public bool IsActive(DateTimeOffset now)
     {
-        return now - LastWrite < ActiveWindow;
+        return LastWrite > ActiveSince(now);
     }
 
     public void RecordWrite(DateTimeOffset now)

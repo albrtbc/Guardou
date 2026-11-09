@@ -485,6 +485,8 @@
   "shareCopyLink": "Copy link",
   "shareLinkCopied": "Link copied",
   "done": "Done",
+  "sharedLinkJoin": "Add to Shared with me",
+  "sourceCodeLink": "Source code",
   "sharedLinkUnavailable": "This link does not exist, or the owner stopped sharing it.",
   "shareWithPeople": "People with access",
   "shareAddPeople": "Add people",
@@ -584,6 +586,10 @@
   "uploadConcurrencyDescription": "Number of files that each client uploads at the same time.",
   "uploadChunkSize": "Chunk size (MB)",
   "uploadChunkSizeDescription": "Size of each request of an upload.",
+  "maxFileSize": "Maximum file size (MB)",
+  "maxFileSizeDescription": "Largest file a user can upload. Leave empty for no limit.",
+  "minFreeSpace": "Free space to keep (MB)",
+  "minFreeSpaceDescription": "Uploads and copies are refused when they would leave less free space than this on the server.",
   "uploadingItems": "{count, plural, =1{Uploading 1 item} other{Uploading {count} items}}",
   "@uploadingItems": {
     "placeholders": {
@@ -656,6 +662,10 @@
   "userQuotaInvalid": "Enter a number that is 0 or more.",
   "quotaExceeded": "Your storage quota is full.",
   "uploadQuotaExceeded": "Not enough space.",
+  "uploadFileTooLarge": "File is too large.",
+  "uploadStorageFull": "The server is out of space.",
+  "uploadTooManyUploads": "Too many uploads at once. Try again soon.",
+  "storageFull": "The server does not have enough free space.",
   "userQuotaColumn": "Quota",
   "userQuotaNoLimit": "No limit"
 }

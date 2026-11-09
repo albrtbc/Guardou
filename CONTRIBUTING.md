@@ -1,29 +1,26 @@
 # Contributing
 
-We are happy that you want to contribute and help make Guardou better!
+Thanks for wanting to help make this fork of Guardou better!
+
+This repository is a fork of [GuardouApp/Guardou](https://github.com/GuardouApp/Guardou), and the rules below are this fork's own.
 
 ## Before you start
 
-Before you work on a new feature, please start a discussion, or comment on an existing one, to agree on the implementation details. This saves you time and avoids the disappointment of having a PR closed later because the change doesn't fit the project's direction.
+Before you work on a new feature, open an issue to agree on the approach. Bug fixes and security fixes can go straight to a pull request.
 
 ## How to contribute
 
-The simplest way to contribute is by using Guardou and reporting any [issues](https://github.com/GuardouApp/Guardou/issues/new/choose) you may find.
-
-You can also help by improving our documentation. It sits under the `docs` folder and is powered by [Docusaurus](https://docusaurus.io/).
-
-Last but not least, programmers can contribute by fixing open issues, and by discussing and implementing features. Starting a discussion or even implementing a feature doesn't mean it will be included in Guardou. Our goal is to keep Guardou simple and easy to use. If a feature doesn't help us reach this goal, it will not enter the feature set.
+- Report bugs you find in this fork's [issues](https://github.com/albrtbc/Guardou/issues).
+- Improve the documentation. It sits under the `docs` folder and is powered by [Docusaurus](https://docusaurus.io/).
+- Fix open issues, or implement agreed features, through pull requests.
 
 ## AI Usage Policy
 
-AI must not replace human contribution. Simply asking an AI tool to generate the feature and submitting the result as a pull request is not accepted. Maintainers can already do that themselves, so this workflow provides no meaningful advantage to the project.
+AI-assisted contributions are welcome, including changes written mostly by AI tools. What counts is the quality of the result, not how it was produced:
 
-To keep contributions reviewable and high-quality, please follow these guidelines when using AI tools:
-
-* Use technical prompts. Guide the tool toward how you would implement it yourself.
-    * Do: "Add table X", "Add column X to table Y", "Use library W to do Z".
-    * Don't: "Implement feature X".
-* Understand every line. You must be able to explain what your code does and why, in your own words.
-* Test before submitting. Review and test all code manually before opening a PR.
-* Write your own words. Don't paste AI-generated text into issues, comments, or PR descriptions. Such content will be closed without a detailed review.
-* AI only writes code. Documentation, UI, UX, and user-facing text must be decided by a human.
+* You own the change. Whoever opens the pull request is responsible for every line, and must be able to explain what it does and why.
+* Tests are required. Behaviour changes come with tests, and the existing suites must pass: `dotnet test` for the server, and `flutter analyze` plus `flutter test` for the frontend.
+* CI must be green, including a committed, up-to-date `api/openapi.json`.
+* Security-sensitive changes (authentication, sharing, uploads, file serving) get a review focused on them before they are merged.
+* Say briefly in the pull request description how AI was used, for example "implemented with an AI agent, reviewed and tested by me".
+* Documentation, UI text and other user-facing text may be AI-written too, but a human reviews them before they are merged.

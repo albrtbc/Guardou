@@ -43,11 +43,16 @@ class _ServerSettingsFormState extends ConsumerState<_ServerSettingsForm>
   static const _maximumConcurrency = 6;
   static const _minimumChunkSize = 1;
   static const _maximumChunkSize = 90;
+  static const _minimumFileSize = 1;
+  static const _minimumFreeSpace = 0;
+  static const _maximumStorage = 1048576;
 
   final _externalUrl = TextEditingController();
   final _trashRetention = TextEditingController();
   final _uploadConcurrency = TextEditingController();
   final _uploadChunkSize = TextEditingController();
+  final _maxFileSize = TextEditingController();
+  final _minFreeSpace = TextEditingController();
 
   @override
   ServerSettingsView get saved => widget.settings;
@@ -64,6 +69,8 @@ class _ServerSettingsFormState extends ConsumerState<_ServerSettingsForm>
     _trashRetention.text = '${value.trashRetentionDays}';
     _uploadConcurrency.text = '${value.uploadConcurrency}';
     _uploadChunkSize.text = '${value.uploadChunkSizeMb}';
+    _maxFileSize.text = '${value.maxFileSizeMb ?? ''}';
+    _minFreeSpace.text = '${value.minFreeSpaceMb}';
   }
 
   @override
@@ -78,6 +85,8 @@ class _ServerSettingsFormState extends ConsumerState<_ServerSettingsForm>
           trashRetentionDays: int.parse(_trashRetention.text),
           uploadConcurrency: int.parse(_uploadConcurrency.text),
           uploadChunkSizeMb: int.parse(_uploadChunkSize.text),
+          maxFileSizeMb: int.tryParse(_maxFileSize.text),
+          minFreeSpaceMb: int.parse(_minFreeSpace.text),
         ),
       );
 
@@ -87,10 +96,15 @@ class _ServerSettingsFormState extends ConsumerState<_ServerSettingsForm>
     _trashRetention.dispose();
     _uploadConcurrency.dispose();
     _uploadChunkSize.dispose();
+    _maxFileSize.dispose();
+    _minFreeSpace.dispose();
     super.dispose();
   }
 
-  String? _validateRange(AppLocalizations l10n, String? value, int minimum, int maximum) {
+  String? _validateRange(AppLocalizations l10n, String? value, int minimum, int maximum, {bool optional = false}) {
+    if (optional && (value ?? '').isEmpty) {
+      return null;
+    }
     final number = int.tryParse(value ?? '');
     final valid = number != null && number >= minimum && number <= maximum;
     return valid ? null : l10n.concurrencyInvalid(minimum, maximum);
@@ -103,15 +117,16 @@ class _ServerSettingsFormState extends ConsumerState<_ServerSettingsForm>
     required String field,
     required int minimum,
     required int maximum,
+    bool optional = false,
   }) => SettingsTextField(
     label: label,
     description: description,
-    required: true,
+    required: !optional,
     controller: controller,
     keyboardType: TextInputType.number,
     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
     lockedBy: lockedVariable(widget.settings.locked, field),
-    validator: (value) => _validateRange(AppLocalizations.of(context), value, minimum, maximum),
+    validator: (value) => _validateRange(AppLocalizations.of(context), value, minimum, maximum, optional: optional),
   );
 
   @override
@@ -154,6 +169,23 @@ class _ServerSettingsFormState extends ConsumerState<_ServerSettingsForm>
             field: 'uploadChunkSizeMb',
             minimum: _minimumChunkSize,
             maximum: _maximumChunkSize,
+          ),
+          _numberField(
+            label: l10n.maxFileSize,
+            description: l10n.maxFileSizeDescription,
+            controller: _maxFileSize,
+            field: 'maxFileSizeMb',
+            minimum: _minimumFileSize,
+            maximum: _maximumStorage,
+            optional: true,
+          ),
+          _numberField(
+            label: l10n.minFreeSpace,
+            description: l10n.minFreeSpaceDescription,
+            controller: _minFreeSpace,
+            field: 'minFreeSpaceMb',
+            minimum: _minimumFreeSpace,
+            maximum: _maximumStorage,
           ),
           settingsActions(),
         ],

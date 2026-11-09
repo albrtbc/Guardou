@@ -91,6 +91,8 @@ public sealed class ItemsController(ItemBrowser browser, ItemOrganizer organizer
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status413PayloadTooLarge)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status507InsufficientStorage)]
     public async Task<IActionResult> Copy(string id, TransferRequest request, CancellationToken cancellationToken)
     {
         ItemEntry? copy = await organizer.CopyAsync(User.UserId(), id, request.DestinationId, request.Conflict, cancellationToken);

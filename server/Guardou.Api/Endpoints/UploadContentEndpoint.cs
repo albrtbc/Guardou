@@ -1,7 +1,9 @@
 using System.Net;
 using Guardou.Api.Authentication;
+using Guardou.Application.Settings;
 using Guardou.Application.Uploads;
 using Guardou.Domain.Files;
+using Guardou.Domain.Settings;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http.Features;
 using tusdotnet;
@@ -33,15 +35,18 @@ internal static class UploadContentEndpoint
         endpoints.MapTus(Pattern, ConfigurationOf).RequireAuthorization();
     }
 
-    private static Task<DefaultTusConfiguration> ConfigurationOf(HttpContext context)
+    private static async Task<DefaultTusConfiguration> ConfigurationOf(HttpContext context)
     {
-        return Task.FromResult(new DefaultTusConfiguration
+        ServerSettings settings = await context.RequestServices.GetRequiredService<EffectiveSettings<ServerSettings>>()
+            .GetAsync(context.RequestAborted);
+        return new DefaultTusConfiguration
         {
             Store = context.RequestServices.GetRequiredService<TusDiskStore>(),
             Expiration = new SlidingExpiration(Upload.Lifetime),
             AllowedExtensions = Extensions,
-            Events = new Events { OnAuthorizeAsync = AuthorizeAsync, OnBeforeWriteAsync = RecordWriteAsync },
-        });
+            MaxAllowedUploadSizeInBytesLong = StoragePolicy.BytesOf(settings.MaxFileSizeMb),
+            Events = new Events { OnAuthorizeAsync = AuthorizeAsync, OnBeforeWriteAsync = BeforeWriteAsync },
+        };
     }
 
     private static async Task AuthorizeAsync(AuthorizeContext context)
@@ -71,9 +76,15 @@ internal static class UploadContentEndpoint
         }
     }
 
-    private static Task RecordWriteAsync(BeforeWriteContext context)
+    private static async Task BeforeWriteAsync(BeforeWriteContext context)
     {
-        return context.HttpContext.RequestServices.GetRequiredService<UploadSessions>()
-            .RecordWriteAsync(context.FileId, context.CancellationToken);
+        UploadSessions sessions = context.HttpContext.RequestServices.GetRequiredService<UploadSessions>();
+        if (!await sessions.HasRoomToWriteAsync(context.HttpContext.Request.ContentLength ?? 0, context.CancellationToken))
+        {
+            context.FailRequest(HttpStatusCode.InsufficientStorage, "The server does not have enough free space.");
+            return;
+        }
+
+        await sessions.RecordWriteAsync(context.FileId, context.CancellationToken);
     }
 }

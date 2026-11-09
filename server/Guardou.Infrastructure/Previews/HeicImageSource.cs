@@ -5,8 +5,10 @@ namespace Guardou.Infrastructure.Previews;
 
 internal sealed class HeicImageSource(StoragePaths paths) : IImageSource
 {
-    private const string OutputName = "image.jpg";
+    private const string OutputExtension = "jpg";
+    private const string OutputName = "image." + OutputExtension;
     private const string Quality = "90";
+    private const long MaximumOutputBytes = 64L * 1024 * 1024;
 
     private static readonly FrozenSet<string> Extensions = FrozenSet.Create(StringComparer.OrdinalIgnoreCase, "heic", "heif");
 
@@ -17,11 +19,11 @@ internal sealed class HeicImageSource(StoragePaths paths) : IImageSource
         return Extensions.Contains(extension) && _decoder.IsAvailable;
     }
 
-    public async Task<SourceImage> ReadAsync(string path, CancellationToken cancellationToken)
+    public async Task<SourceImage> ReadAsync(string path, string extension, CancellationToken cancellationToken)
     {
         using ScratchDirectory scratch = new(paths.TemporaryDirectory);
         string output = scratch.Combine(OutputName);
         await _decoder.RunAsync(["--quality", Quality, path, output], cancellationToken);
-        return new SourceImage(await File.ReadAllBytesAsync(output, cancellationToken), TiffOrientation.Normal);
+        return SourceImage.FromBuffer(await SourceFile.ReadAsync(output, cancellationToken, MaximumOutputBytes), OutputExtension, TiffOrientation.Normal);
     }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:guardou/api/generated/models/authentication_method.dart';
 import 'package:guardou/core/api/api_problem.dart';
+import 'package:guardou/core/widgets/source_code_link.dart';
 import 'package:guardou/features/auth/login_page.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -124,6 +125,15 @@ void main() {
 
     verify(() => location.assign(oidcLogin)).called(1);
     expect(find.text('or'), findsOneWidget);
+  });
+
+  testWidgets('links to the source code', (tester) async {
+    final location = MockBrowserLocation();
+    await pumpLogin(tester, location: location);
+
+    await tester.tap(find.text('Source code'));
+
+    verify(() => location.open(Uri.parse(sourceCodeUrl))).called(1);
   });
 
   testWidgets('shows only single sign-on when the password login is disabled in portrait', (tester) async {

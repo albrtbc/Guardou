@@ -184,7 +184,9 @@ class _FileCard extends ConsumerWidget {
     }
     final date = _cardDate(l10n, entry.created);
     final creator = entry.creator;
-    return creator.id == user?.id ? l10n.fileCreatedByYou(date) : l10n.fileCreatedBy(creator.displayName, date);
+    return creator.id != null && creator.id == user?.id
+        ? l10n.fileCreatedByYou(date)
+        : l10n.fileCreatedBy(creator.displayName, date);
   }
 
   @override

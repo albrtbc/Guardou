@@ -2,7 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using Guardou.Application.Files;
 using Guardou.Application.Tasks;
+using Guardou.Domain.Files;
 using Guardou.Domain.Tasks;
+using Guardou.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Guardou.IntegrationTests;
 
@@ -51,6 +55,45 @@ public sealed class TasksTests : SignedInTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(TaskState.Failed, run?.State);
         Assert.True(run?.Updated >= task.Updated);
+    }
+
+    [Fact]
+    public async Task FailsThePreviewOfAnImageOverThePixelLimitAndKeepsServing()
+    {
+        ItemEntry huge = await ItemsApi.ReadEntryAsync(
+            await Client.UploadBytesAsync(ItemsApi.Root, "huge.png", PreviewsApi.LargePng(20_000, 20_000)));
+
+        TaskEntry task = await Client.WaitForTaskAsync(huge.Id, TaskState.Failed);
+        ItemEntry image = await Client.UploadImageAsync("wide.png");
+
+        Assert.Contains("megapixels", task.Error, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.OK, (await Client.WaitForPreviewAsync(image.Id)).StatusCode);
+    }
+
+    [Fact]
+    public async Task TasksInterruptedByARestartFailAndAdminsCanResetThem()
+    {
+        TaskEntry task = await InterruptedTaskAsync();
+
+        HttpResponseMessage response = await Client.PostAsync($"/api/tasks/{task.Id}/reset", null, CancellationToken);
+        TaskEntry? reset = await response.Content.ReadFromJsonAsync<TaskEntry>(HttpClientExtensions.JsonOptions, CancellationToken);
+
+        Assert.Equal(QueuedTask.InterruptedError, task.Error);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(TaskState.Pending, reset?.State);
+        Assert.Null(reset?.Error);
+    }
+
+    [Fact]
+    public async Task AdminsCanRunTasksInterruptedByARestart()
+    {
+        TaskEntry task = await InterruptedTaskAsync();
+
+        HttpResponseMessage response = await Client.PostAsync($"/api/tasks/{task.Id}/run", null, CancellationToken);
+        TaskEntry? run = await response.Content.ReadFromJsonAsync<TaskEntry>(HttpClientExtensions.JsonOptions, CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotEqual(QueuedTask.InterruptedError, run?.Error);
     }
 
     [Fact]
@@ -120,6 +163,20 @@ public sealed class TasksTests : SignedInTests
         HttpResponseMessage response = await Client.GetAsync("/api/tasks?limit=0", CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private async Task<TaskEntry> InterruptedTaskAsync()
+    {
+        ItemEntry broken = await UploadBrokenImageAsync();
+        TaskEntry failed = await Client.WaitForTaskAsync(broken.Id, TaskState.Failed);
+        await using AsyncServiceScope scope = Factory.Services.CreateAsyncScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Guid id = ItemId.TryParse(failed.Id, out Guid parsed) ? parsed : throw new InvalidOperationException("The task id is invalid.");
+        await context.Set<QueuedTask>()
+            .Where(task => task.Id == id)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(task => task.State, TaskState.Running), CancellationToken);
+        await scope.ServiceProvider.GetRequiredService<TaskRunner>().RecoverAsync(CancellationToken);
+        return await Client.WaitForTaskAsync(broken.Id, TaskState.Failed);
     }
 
     private async Task<ItemEntry> UploadBrokenImageAsync()

@@ -1,3 +1,4 @@
+using Guardou.Application.Audit;
 using Guardou.Application.Files;
 using Guardou.Application.Previews;
 
@@ -8,7 +9,8 @@ public sealed class UserAccounts(
     IItemStore items,
     IBlobStore blobs,
     IPreviewCache previews,
-    IProfilePictureStore pictures)
+    IProfilePictureStore pictures,
+    AuditLog audit)
 {
     public async Task<IReadOnlyList<UserAccount>> ListAsync()
     {
@@ -32,6 +34,7 @@ public sealed class UserAccounts(
         UserAccount account = await store.FindByUsernameAsync(profile.Username)
             ?? throw new InvalidOperationException($"The user '{profile.Username}' was not created.");
         await store.SetQuotaAsync(account.Id, quotaBytes);
+        audit.UserCreated(account.Id, account.Username, account.IsAdmin);
         return account with { QuotaBytes = quotaBytes };
     }
 
@@ -45,6 +48,12 @@ public sealed class UserAccounts(
 
         Ensure(await store.UpdateAsync(id, profile, password));
         await store.SetQuotaAsync(id, quotaBytes);
+        audit.UserUpdated(id, passwordChanged: password is not null);
+        if (account.IsAdmin != profile.IsAdmin)
+        {
+            audit.UserRoleChanged(id, profile.IsAdmin);
+        }
+
         return await GetAsync(id);
     }
 
@@ -65,12 +74,17 @@ public sealed class UserAccounts(
 
         previews.DeleteOwner(account.Id);
         pictures.Delete(account.Id);
+        audit.UserDeleted(account.Id, account.Username);
     }
 
     public async Task<UserAccount> RemoveLoginAsync(string id, string provider)
     {
         UserAccount account = await GetAsync(id);
-        await store.RemoveLoginAsync(account.Id, provider);
+        if (await store.RemoveLoginAsync(account.Id, provider))
+        {
+            audit.UserLoginRemoved(account.Id, provider);
+        }
+
         return await GetAsync(id);
     }
 

@@ -6,6 +6,8 @@ public static class SettingsVariables
     public const string TrashRetentionDays = "TRASH_RETENTION_DAYS";
     public const string UploadConcurrency = "UPLOAD_CONCURRENCY";
     public const string UploadChunkSizeMb = "UPLOAD_CHUNK_SIZE_MB";
+    public const string MaxFileSizeMb = "MAX_FILE_SIZE_MB";
+    public const string MinFreeSpaceMb = "MIN_FREE_SPACE_MB";
     public const string OidcIssuer = "OIDC_ISSUER";
     public const string OidcClientId = "OIDC_CLIENT_ID";
     public const string OidcClientSecret = "OIDC_CLIENT_SECRET";

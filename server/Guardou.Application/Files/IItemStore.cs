@@ -18,6 +18,8 @@ public interface IItemStore
 
     Task<IReadOnlyList<Item>> ChildrenWithTrashAsync(Guid parentId, CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<Guid>> ChildFolderIdsAsync(IReadOnlyCollection<Guid> parentIds, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<Item>> StarredAsync(string ownerId, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Item>> TrashedAsync(string ownerId, CancellationToken cancellationToken);

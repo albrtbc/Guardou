@@ -1,3 +1,4 @@
+using Guardou.Application.Audit;
 using Guardou.Application.Settings;
 using Guardou.Domain.Tasks;
 
@@ -8,12 +9,14 @@ public sealed class QueueSettings
     private readonly ITaskQueueSettingsStore _store;
     private readonly IEnumerable<ITaskProducer> _producers;
     private readonly TaskSignal _signal;
+    private readonly AuditLog _audit;
 
-    internal QueueSettings(ITaskQueueSettingsStore store, IEnumerable<ITaskProducer> producers, TaskSignal signal)
+    internal QueueSettings(ITaskQueueSettingsStore store, IEnumerable<ITaskProducer> producers, TaskSignal signal, AuditLog audit)
     {
         _store = store;
         _producers = producers;
         _signal = signal;
+        _audit = audit;
     }
 
     public async Task<IReadOnlyList<TaskConcurrency>> ConcurrencyAsync(CancellationToken cancellationToken)
@@ -46,6 +49,7 @@ public sealed class QueueSettings
         }
 
         await _store.SaveAsync(cancellationToken);
+        _audit.SettingsChanged(AuditSections.Tasks);
         _signal.Notify();
     }
 

@@ -7,4 +7,7 @@ class _UnsupportedBrowserLocation implements BrowserLocation {
 
   @override
   void assign(Uri uri) {}
+
+  @override
+  void open(Uri uri) {}
 }

@@ -4,10 +4,15 @@ using Guardou.Domain.Files;
 using Guardou.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace Guardou.Infrastructure.Indexing;
 
-internal sealed class ItemIndexWriter(AppDbContext app, IndexDbContext index, IMimeTypeMap mimeTypes) : IItemIndexRebuilder
+internal sealed partial class ItemIndexWriter(
+    AppDbContext app,
+    IndexDbContext index,
+    IMimeTypeMap mimeTypes,
+    ILogger<ItemIndexWriter> logger) : IItemIndexRebuilder
 {
     private DbSet<Item> Items => app.Set<Item>();
 
@@ -164,17 +169,32 @@ internal sealed class ItemIndexWriter(AppDbContext app, IndexDbContext index, IM
     private async Task<List<IndexNode>> LoadSubtreeAsync(Item root, string rootPath, CancellationToken cancellationToken)
     {
         List<IndexNode> nodes = [new IndexNode(root, rootPath)];
+        HashSet<Guid> visited = [root.Id];
         List<IndexNode> level = nodes;
-        while (level.Where(node => node.Item.IsFolder).ToDictionary(node => node.Item.Id, node => node.Path) is { Count: > 0 } folders)
+        bool broken = false;
+        for (int depth = 1; level.Where(node => node.Item.IsFolder).ToDictionary(node => node.Item.Id, node => node.Path) is { Count: > 0 } folders; depth++)
         {
+            if (depth > TreeLimits.MaximumWalkDepth)
+            {
+                broken = true;
+                break;
+            }
+
             List<Guid?> parentIds = folders.Keys.Select(id => (Guid?)id).ToList();
             List<Item> children = await Items.AsNoTracking()
                 .Where(item => parentIds.Contains(item.ParentId) && item.Trashed == null)
                 .ToListAsync(cancellationToken);
-            level = children
+            List<Item> unvisited = children.Where(child => visited.Add(child.Id)).ToList();
+            broken |= unvisited.Count < children.Count;
+            level = unvisited
                 .Select(child => new IndexNode(child, IndexPath.Of(folders.GetValueOrDefault(child.ParentId ?? Guid.Empty), child.Id)))
                 .ToList();
             nodes.AddRange(level);
+        }
+
+        if (broken)
+        {
+            LogBrokenTree(root.Id);
         }
 
         return nodes;
@@ -222,4 +242,7 @@ internal sealed class ItemIndexWriter(AppDbContext app, IndexDbContext index, IM
     }
 
     private sealed record IndexNode(Item Item, string Path);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The folder tree under item {ItemId} loops back on itself or is deeper than the limit, so the index skips the repeated items.")]
+    private partial void LogBrokenTree(Guid itemId);
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme/app_tokens.dart';
 import '../../core/layout/window_size_class.dart';
 import '../../core/widgets/brand_mark.dart';
+import '../../core/widgets/source_code_link.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'auth_form_controller.dart';
 
@@ -52,38 +53,44 @@ class AuthCard extends StatelessWidget {
           padding: EdgeInsets.all(tokens.spacing),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: _maxWidth),
-            child: Card(
-              child: Padding(
-                padding: EdgeInsets.all(tokens.spacing * 2),
-                child: Form(
-                  key: formKey,
-                  child: AutofillGroup(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Center(child: BrandMark(size: 48)),
-                        SizedBox(height: tokens.spacing),
-                        Text(title, style: theme.textTheme.headlineSmall, textAlign: TextAlign.center),
-                        if (subtitle case final text?) ...[
-                          const SizedBox(height: 8),
-                          Text(text, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
-                        ],
-                        SizedBox(height: tokens.spacing * 2),
-                        ...children,
-                        if (currentFailure != null)
-                          Padding(
-                            padding: EdgeInsets.only(top: tokens.spacing),
-                            child: Text(
-                              failureMessage(l10n, currentFailure),
-                              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
-                            ),
-                          ),
-                      ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(tokens.spacing * 2),
+                    child: Form(
+                      key: formKey,
+                      child: AutofillGroup(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Center(child: BrandMark(size: 48)),
+                            SizedBox(height: tokens.spacing),
+                            Text(title, style: theme.textTheme.headlineSmall, textAlign: TextAlign.center),
+                            if (subtitle case final text?) ...[
+                              const SizedBox(height: 8),
+                              Text(text, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+                            ],
+                            SizedBox(height: tokens.spacing * 2),
+                            ...children,
+                            if (currentFailure != null)
+                              Padding(
+                                padding: EdgeInsets.only(top: tokens.spacing),
+                                child: Text(
+                                  failureMessage(l10n, currentFailure),
+                                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                const SourceCodeLink(),
+              ],
             ),
           ),
         ),

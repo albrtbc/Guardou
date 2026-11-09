@@ -103,17 +103,20 @@ internal sealed class IdentityUserAccountStore(
         }
     }
 
-    public async Task RemoveLoginAsync(string id, string provider)
+    public async Task<bool> RemoveLoginAsync(string id, string provider)
     {
         if (await userManager.FindByIdAsync(id) is not { } user)
         {
-            return;
+            return false;
         }
 
+        bool removed = false;
         foreach (UserLoginInfo login in (await userManager.GetLoginsAsync(user)).Where(login => login.LoginProvider == provider))
         {
-            await userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
+            removed |= (await userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey)).Succeeded;
         }
+
+        return removed;
     }
 
     public async Task DeleteAsync(string id)

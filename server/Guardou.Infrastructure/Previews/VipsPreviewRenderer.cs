@@ -28,9 +28,10 @@ internal sealed class VipsPreviewRenderer(IEnumerable<IImageSource> sources, Loc
         string fileName,
         CancellationToken cancellationToken)
     {
+        string extension = ItemName.Extension(fileName);
         IImageSource source = SourceFor(fileName) ?? throw new InvalidDataException($"The file '{fileName}' has no preview.");
-        SourceImage image = await source.ReadAsync(blobs.PathOf(storageKey), cancellationToken);
-        return PreviewSizes.All.ToDictionary(size => size, size => Encode(image, size));
+        SourceImage image = await source.ReadAsync(blobs.PathOf(storageKey), extension, cancellationToken);
+        return Render(image, cancellationToken);
     }
 
     private IImageSource? SourceFor(string fileName)
@@ -39,12 +40,34 @@ internal sealed class VipsPreviewRenderer(IEnumerable<IImageSource> sources, Loc
         return _sources.FirstOrDefault(source => source.Supports(extension));
     }
 
-    private static byte[] Encode(SourceImage image, PreviewSize size)
+    private static Dictionary<PreviewSize, byte[]> Render(SourceImage image, CancellationToken cancellationToken)
+    {
+        Inspect(image);
+        cancellationToken.ThrowIfCancellationRequested();
+        using Image thumbnail = image.Thumbnail(PreviewSizes.All.Max(PreviewSizes.MaximumEdge));
+        using Image decoded = thumbnail.CopyMemory();
+        using Image oriented = Orient(decoded, image.Orientation);
+        return PreviewSizes.All.ToDictionary(size => size, size => Encode(oriented, size));
+    }
+
+    private static void Inspect(SourceImage image)
+    {
+        try
+        {
+            using Image header = image.OpenHeader();
+            ImageGuard.Check(header, image.Extension);
+        }
+        catch (VipsException exception)
+        {
+            throw new InvalidDataException($"The file is not a valid '.{image.Extension}' image, or its format is not allowed.", exception);
+        }
+    }
+
+    private static byte[] Encode(Image image, PreviewSize size)
     {
         int edge = PreviewSizes.MaximumEdge(size);
-        using Image thumbnail = Image.ThumbnailBuffer(image.Content, edge, height: edge, size: Enums.Size.Down);
-        using Image oriented = Orient(thumbnail, image.Orientation);
-        return oriented.WebpsaveBuffer(q: Quality, keep: Enums.ForeignKeep.None);
+        using Image thumbnail = image.ThumbnailImage(edge, height: edge, size: Enums.Size.Down);
+        return thumbnail.WebpsaveBuffer(q: Quality, keep: Enums.ForeignKeep.None);
     }
 
     private static Image Orient(Image image, int orientation)

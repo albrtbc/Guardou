@@ -22,6 +22,9 @@ public sealed class UploadsController(UploadSessions sessions, UploadCompleter c
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status413PayloadTooLarge)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status507InsufficientStorage)]
     public async Task<IActionResult> Start(StartUploadRequest request, CancellationToken cancellationToken)
     {
         UploadRequest upload = new(request.FolderId, request.FileName, request.RelativePath, request.Size, request.Modified, request.Conflict);

@@ -21,6 +21,10 @@ public interface ITaskStore
 
     Task<int> ResetAsync(TaskKind? kind, TaskState state, DateTimeOffset now, CancellationToken cancellationToken);
 
+    Task<bool> ReleaseAsync(Guid id, DateTimeOffset now, CancellationToken cancellationToken);
+
+    Task<int> FailAsync(TaskState state, string message, DateTimeOffset now, CancellationToken cancellationToken);
+
     Task<IReadOnlyDictionary<TaskKind, TaskCounts>> CountAsync(CancellationToken cancellationToken);
 
     Task<IReadOnlyList<TaskEntry>> ListAsync(TaskKind? kind, TaskState? state, int limit, CancellationToken cancellationToken);

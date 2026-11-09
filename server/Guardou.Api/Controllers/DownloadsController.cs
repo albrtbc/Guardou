@@ -17,6 +17,8 @@ public sealed class DownloadsController(ItemDownloads downloads) : ControllerBas
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status413PayloadTooLarge)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Download(string id, CancellationToken cancellationToken)
     {
         FileDownload? file = await downloads.TryOpenFileAsync(User.UserId(), id, cancellationToken);
@@ -44,6 +46,8 @@ public sealed class DownloadsController(ItemDownloads downloads) : ControllerBas
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status413PayloadTooLarge)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
     public Task<IActionResult> Archive([FromQuery] IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         return ArchiveAsync(ids, cancellationToken);
@@ -52,6 +56,6 @@ public sealed class DownloadsController(ItemDownloads downloads) : ControllerBas
     private async Task<IActionResult> ArchiveAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ItemArchive archive = await downloads.PrepareArchiveAsync(User.UserId(), ids, cancellationToken);
-        return new ArchiveResult(archive, downloads);
+        return new ArchiveResult(archive, downloads, ArchiveAudience.SignedIn);
     }
 }

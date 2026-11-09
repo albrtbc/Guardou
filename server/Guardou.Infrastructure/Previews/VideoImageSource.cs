@@ -9,6 +9,7 @@ internal sealed class VideoImageSource : IImageSource
 {
     private const double FramePosition = 0.1;
     private const double MaximumSeekSeconds = 10;
+    private const string FrameExtension = "png";
 
     private static readonly FrozenSet<string> Extensions = FrozenSet.Create(
         StringComparer.OrdinalIgnoreCase,
@@ -22,7 +23,7 @@ internal sealed class VideoImageSource : IImageSource
         return Extensions.Contains(extension) && _probe.IsAvailable && _decoder.IsAvailable;
     }
 
-    public async Task<SourceImage> ReadAsync(string path, CancellationToken cancellationToken)
+    public async Task<SourceImage> ReadAsync(string path, string extension, CancellationToken cancellationToken)
     {
         double seek = SeekSeconds(await DurationAsync(path, cancellationToken));
         byte[] frame = await TryFrameAtAsync(path, seek, cancellationToken);
@@ -32,7 +33,7 @@ internal sealed class VideoImageSource : IImageSource
         }
 
         return frame.Length > 0
-            ? new SourceImage(frame, TiffOrientation.Normal)
+            ? SourceImage.FromBuffer(frame, FrameExtension, TiffOrientation.Normal)
             : throw new InvalidDataException("The video has no frame.");
     }
 
