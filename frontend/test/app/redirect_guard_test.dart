@@ -45,7 +45,7 @@ void main() {
 
     test('sends a signed out user to the login page with the target', () {
       expect(resolve('/trash', session: signedOut), '/login?redirect=%2Ftrash');
-      expect(resolve('/home', session: signedOut), '/login');
+      expect(resolve('/', session: signedOut), '/login');
       expect(resolve('/login', session: signedOut), isNull);
     });
 
@@ -59,12 +59,12 @@ void main() {
     test('sends a signed in user to the target after login', () {
       expect(resolve('/register?redirect=%2Fstarred'), '/starred');
       expect(resolve('/login?redirect=%2Ftrash'), '/trash');
-      expect(resolve('/login?redirect=https%3A%2F%2Fevil.example'), '/home');
-      expect(resolve('/loading'), '/home');
+      expect(resolve('/login?redirect=https%3A%2F%2Fevil.example'), '/');
+      expect(resolve('/loading'), '/');
     });
 
     test('shows the server error page when loading fails', () {
-      expect(resolve('/home', configuration: AsyncError<Object?>(Exception(), StackTrace.empty)), '/500');
+      expect(resolve('/suggested', configuration: AsyncError<Object?>(Exception(), StackTrace.empty)), '/500');
       expect(resolve('/500', configuration: AsyncError<Object?>(Exception(), StackTrace.empty)), isNull);
     });
 

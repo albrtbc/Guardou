@@ -39,7 +39,7 @@ String? resolveRedirect({
     return _withRedirect(signInPage, target);
   }
   if (Routes.entryPages.contains(path)) {
-    return target ?? Routes.home;
+    return target ?? Routes.root;
   }
   return null;
 }
@@ -55,7 +55,7 @@ String? _targetOf(Uri location) {
 }
 
 String _withRedirect(String path, String? target) {
-  if (target == null || target == Routes.home || target == Routes.root) {
+  if (target == null || target == Routes.root) {
     return path;
   }
   return Uri(path: path, queryParameters: {Routes.redirectParameter: target}).toString();

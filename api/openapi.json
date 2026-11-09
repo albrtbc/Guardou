@@ -6177,6 +6177,15 @@
           }
         }
       },
+      "StartPage": {
+        "enum": [
+          "files",
+          "suggested",
+          "starred",
+          "shared"
+        ],
+        "type": "string"
+      },
       "StartUploadRequest": {
         "required": [
           "folderId",
@@ -6460,6 +6469,7 @@
         "required": [
           "theme",
           "language",
+          "startPage",
           "uploadConflictPolicy"
         ],
         "type": "object",
@@ -6469,6 +6479,9 @@
           },
           "language": {
             "$ref": "#/components/schemas/Language"
+          },
+          "startPage": {
+            "$ref": "#/components/schemas/StartPage"
           },
           "uploadConflictPolicy": {
             "$ref": "#/components/schemas/UploadConflictPolicy"

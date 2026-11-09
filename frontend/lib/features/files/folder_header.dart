@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_details.dart';
 import '../../core/layout/window_size_class.dart';
@@ -48,7 +48,11 @@ class ItemsHeader extends ConsumerWidget {
           if (readOnly)
             Tooltip(
               message: l10n.readOnlyFolder,
-              child: Icon(LucideIcons.lock, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              child: Icon(
+                FluentIcons.lock_closed_24_regular,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           if (key != null) FolderLayoutToggle(folderId: key),
           if (!compact)
@@ -56,7 +60,7 @@ class ItemsHeader extends ConsumerWidget {
               tooltip: l10n.actionDetails,
               isSelected: ref.watch(detailsPanelProvider),
               onPressed: ref.read(detailsPanelProvider.notifier).toggle,
-              icon: const Icon(LucideIcons.info),
+              icon: const Icon(FluentIcons.info_24_regular),
             ),
         ],
       ),
@@ -76,7 +80,7 @@ class FolderLayoutToggle extends ConsumerWidget {
     return IconButton(
       tooltip: layout == FileLayout.list ? l10n.viewAsGrid : l10n.viewAsList,
       onPressed: () => ref.read(folderLayoutsProvider.notifier).toggle(folderId),
-      icon: Icon(layout == FileLayout.list ? LucideIcons.layoutGrid : LucideIcons.layoutList),
+      icon: Icon(layout == FileLayout.list ? FluentIcons.grid_24_regular : FluentIcons.text_bullet_list_ltr_24_regular),
     );
   }
 }

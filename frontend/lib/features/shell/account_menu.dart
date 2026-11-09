@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../app/router/routes.dart';
 import '../../app/theme/app_tokens.dart';
@@ -124,14 +124,14 @@ class AccountPanel extends ConsumerWidget {
                     SizedBox(height: spacing),
                     FilledButton.tonalIcon(
                       onPressed: () => _openSettings(context),
-                      icon: const Icon(LucideIcons.settings, size: 18),
+                      icon: const Icon(FluentIcons.settings_24_regular, size: 18),
                       label: Text(l10n.accountSettings),
                     ),
                     if (user.isAdmin) ...[
                       SizedBox(height: spacing / 2),
                       FilledButton.tonalIcon(
                         onPressed: () => _openAdministration(context),
-                        icon: const Icon(LucideIcons.shieldCheck, size: 18),
+                        icon: const Icon(FluentIcons.shield_checkmark_24_regular, size: 18),
                         label: Text(l10n.administration),
                       ),
                     ],
@@ -146,7 +146,7 @@ class AccountPanel extends ConsumerWidget {
                   minimumSize: const Size.fromHeight(_signOutHeight),
                   shape: const RoundedRectangleBorder(),
                 ),
-                icon: const Icon(LucideIcons.logOut, size: 18),
+                icon: const Icon(FluentIcons.sign_out_24_regular, size: 18),
                 label: Text(l10n.signOut),
               ),
             ],

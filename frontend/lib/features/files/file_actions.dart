@@ -123,9 +123,14 @@ class FileActions {
       startFolderId: entries.first.parentId ?? Routes.rootFolderId,
       excludedIds: {for (final entry in entries) entry.id},
     );
-    if (destination == null) {
-      return;
+    if (destination != null) {
+      await _transferTo(entries, destination, copy: copy);
     }
+  }
+
+  Future<void> move(List<ItemEntry> entries, String destination) => _transferTo(entries, destination, copy: false);
+
+  Future<void> _transferTo(List<ItemEntry> entries, String destination, {required bool copy}) async {
     final session = ConflictSession(_askConflict);
     var transferred = 0;
     final succeeded = await _guard(

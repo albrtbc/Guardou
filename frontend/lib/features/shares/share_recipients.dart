@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/user_summary.dart';
 import '../../app/theme/app_tokens.dart';
@@ -62,7 +62,7 @@ class _RecipientTile extends StatelessWidget {
     trailing: IconButton(
       tooltip: AppLocalizations.of(context).shareRemoveAccess,
       onPressed: onRemove,
-      icon: const Icon(LucideIcons.x),
+      icon: const Icon(FluentIcons.dismiss_24_regular),
     ),
   );
 }
@@ -119,7 +119,10 @@ class _RecipientSearchState extends ConsumerState<_RecipientSearch> {
           controller: controller,
           focusNode: focusNode,
           onSubmitted: (_) => onSubmitted(),
-          decoration: InputDecoration(labelText: l10n.shareAddPeople, prefixIcon: const Icon(LucideIcons.userPlus)),
+          decoration: InputDecoration(
+            labelText: l10n.shareAddPeople,
+            prefixIcon: const Icon(FluentIcons.person_add_24_regular),
+          ),
         ),
         optionsViewBuilder: (context, onSelected, options) => Align(
           alignment: AlignmentDirectional.topStart,

@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_type.dart';
 import '../../app/theme/item_type_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 IconData itemTypeIcon(ItemType type) => switch (type) {
-  ItemType.folder => LucideIcons.folder,
-  ItemType.image => LucideIcons.fileImage,
-  ItemType.video => LucideIcons.fileVideo,
-  ItemType.audio => LucideIcons.fileAudio,
-  ItemType.pdf => LucideIcons.fileText,
-  ItemType.document => LucideIcons.fileType,
-  ItemType.spreadsheet => LucideIcons.fileSpreadsheet,
-  ItemType.presentation => LucideIcons.presentation,
-  ItemType.archive => LucideIcons.fileArchive,
-  ItemType.text => LucideIcons.fileCode,
-  ItemType.other || ItemType.$unknown => LucideIcons.file,
+  ItemType.folder => FluentIcons.folder_24_regular,
+  ItemType.image => FluentIcons.image_24_regular,
+  ItemType.video => FluentIcons.video_24_regular,
+  ItemType.audio => FluentIcons.music_note_2_24_regular,
+  ItemType.pdf => FluentIcons.document_pdf_24_regular,
+  ItemType.document => FluentIcons.document_text_24_regular,
+  ItemType.spreadsheet => FluentIcons.document_table_24_regular,
+  ItemType.presentation => FluentIcons.slide_text_24_regular,
+  ItemType.archive => FluentIcons.folder_zip_24_regular,
+  ItemType.text => FluentIcons.document_one_page_24_regular,
+  ItemType.other || ItemType.$unknown => FluentIcons.document_24_regular,
 };
 
 String itemTypeLabel(ItemType type, AppLocalizations l10n) => switch (type) {

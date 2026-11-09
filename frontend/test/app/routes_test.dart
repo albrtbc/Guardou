@@ -12,6 +12,6 @@ void main() {
     expect(Routes.folderIdOf('/files/'), Routes.rootFolderId);
     expect(Routes.folderIdOf('/folders/AbC'), 'AbC');
     expect(Routes.folderIdOf('/file/AbC'), isNull);
-    expect(Routes.folderIdOf('/home'), isNull);
+    expect(Routes.folderIdOf('/suggested'), isNull);
   });
 }

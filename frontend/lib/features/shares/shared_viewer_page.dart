@@ -26,7 +26,10 @@ class SharedViewerPage extends ConsumerWidget {
       data: AppTheme.dark(),
       child: switch (ref.watch(sharedDetailsProvider(key))) {
         AsyncValue(hasValue: true, :final value?) => _viewer(ref, value),
-        AsyncValue(:final error?) => SharedLinkError(error: error, onRetry: () => ref.invalidate(sharedDetailsProvider(key))),
+        AsyncValue(:final error?) => SharedLinkError(
+          error: error,
+          onRetry: () => ref.invalidate(sharedDetailsProvider(key)),
+        ),
         _ => const SharedLoadingPage(),
       },
     );

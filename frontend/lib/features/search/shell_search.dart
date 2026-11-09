@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_entry.dart';
 import '../../api/generated/models/item_kind.dart';
@@ -73,11 +73,15 @@ class _ShellSearchState extends ConsumerState<ShellSearch> {
       viewBuilder: (_) => SearchPanel(onOpen: _open),
       suggestionsBuilder: (_, _) => const [],
       builder: (context, controller) => widget.fullScreen
-          ? IconButton(tooltip: l10n.search, onPressed: controller.openView, icon: const Icon(LucideIcons.search))
+          ? IconButton(
+              tooltip: l10n.search,
+              onPressed: controller.openView,
+              icon: const Icon(FluentIcons.search_24_regular),
+            )
           : SearchBar(
               controller: controller,
               elevation: const WidgetStatePropertyAll(0),
-              leading: Icon(LucideIcons.search, color: color),
+              leading: Icon(FluentIcons.search_24_regular, color: color),
               hintText: l10n.searchHint,
               hintStyle: WidgetStatePropertyAll(TextStyle(color: color)),
               onTap: controller.openView,

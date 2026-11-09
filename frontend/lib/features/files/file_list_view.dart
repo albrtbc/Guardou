@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_entry.dart';
 import '../../app/theme/app_tokens.dart';
@@ -9,6 +9,7 @@ import '../../l10n/generated/app_localizations.dart';
 import 'file_presentation.dart';
 import 'file_view_settings.dart';
 import 'item_interactions.dart';
+import 'item_marks.dart';
 import 'remembered_scroll.dart';
 import 'sort_menu.dart';
 
@@ -146,12 +147,16 @@ class _ItemName extends StatelessWidget {
     final readOnly = !entry.permissions.canModify;
     return Row(
       children: [
-        Flexible(child: Text(entry.name, overflow: TextOverflow.ellipsis)),
+        Flexible(child: ItemName(entry: entry)),
         if (readOnly) ...[
           const SizedBox(width: 6),
           Tooltip(
             message: AppLocalizations.of(context).readOnly,
-            child: Icon(LucideIcons.lock, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            child: Icon(
+              FluentIcons.lock_closed_24_regular,
+              size: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ],

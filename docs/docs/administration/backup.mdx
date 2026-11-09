@@ -1,11 +1,13 @@
 ---
-sidebar_position: 2
+sidebar_position: 5
 description: Backup strategy
 ---
 
 # Backup
 
 Guardou stores files in the following structure. Backing up these files is all you need to get your instance up and running again.
+
+Stop the container before backup.
 
 ```
 .
@@ -26,6 +28,13 @@ Generated files and folders that you can safely exclude from the backup:
 * `thumbs/*`
 
 Additionally, follow the [3-2-1](https://www.backblaze.com/blog/the-3-2-1-backup-strategy/) backup strategy.
+
+:::note[Take care]
+
+Partial uploads are stored under `cache/`.
+If you exclude `cache/`, after a restore users must upload those files again.
+
+:::
 
 ---
 
@@ -74,7 +83,7 @@ Encrypt backups before they leave the machine, for example with a tool that encr
 
 Back up before every upgrade, and keep that backup until the new version has proven itself. Guardou migrates the database when it starts, and migrations can't be undone. The only way back to an older version is to restore the backup.
 
-Don't use unattended updaters such as Watchtower, and don't use the `latest` tag. An automatic upgrade can cross a migration without a backup. Pin the image to a version and upgrade by hand. See [Upgrading](./upgrading.mdx).
+Don't use unattended updaters such as Watchtower, and don't use the `latest` tag. An automatic upgrade can cross a migration without a backup. Pin the image to a version and upgrade by hand. See [Upgrade](./upgrade.mdx).
 
 ---
 

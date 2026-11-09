@@ -1,28 +1,27 @@
 import 'package:flutter/widgets.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:lucide_icons_flutter/lucide_icons_600.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../app/router/routes.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 enum ShellDestination {
-  home(Routes.home, LucideIcons.house, LucideIcons600.house),
-  files(Routes.files, LucideIcons.folder, LucideIcons600.folder),
-  starred(Routes.starred, LucideIcons.star, LucideIcons600.star),
-  shared(Routes.shared, LucideIcons.users, LucideIcons600.users),
-  trash(Routes.trash, LucideIcons.trash, LucideIcons600.trash);
+  suggested(Routes.suggested, FluentIcons.sparkle_24_regular, FluentIcons.sparkle_24_filled),
+  files(Routes.files, FluentIcons.folder_24_regular, FluentIcons.folder_24_filled),
+  starred(Routes.starred, FluentIcons.star_24_regular, FluentIcons.star_24_filled),
+  shared(Routes.shared, FluentIcons.people_24_regular, FluentIcons.people_24_filled),
+  trash(Routes.trash, FluentIcons.delete_24_regular, FluentIcons.delete_24_filled);
 
   const ShellDestination(this.path, this.icon, this.selectedIcon);
 
-  static const compactBar = [home, starred, shared, files];
-  static const navigation = [home, files, starred, shared, trash];
+  static const compactBar = [suggested, starred, shared, files];
+  static const navigation = [suggested, files, starred, shared, trash];
 
   final String path;
   final IconData icon;
   final IconData selectedIcon;
 
   String label(AppLocalizations l10n) => switch (this) {
-    home => l10n.navigationHome,
+    suggested => l10n.navigationSuggested,
     files => l10n.navigationFiles,
     starred => l10n.navigationStarred,
     shared => l10n.navigationSharedWithMe,

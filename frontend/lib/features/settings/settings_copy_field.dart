@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../app/theme/app_tokens.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -60,7 +60,7 @@ class _SettingsCopyFieldState extends State<SettingsCopyField> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Icon(LucideIcons.link, size: 18, color: colors.onSurfaceVariant),
+              child: Icon(FluentIcons.link_24_regular, size: 18, color: colors.onSurfaceVariant),
             ),
             Container(width: 1, height: 24, color: colors.outlineVariant),
             Expanded(
@@ -81,7 +81,7 @@ class _SettingsCopyFieldState extends State<SettingsCopyField> {
                 foregroundColor: _copied ? tokens.onSuccess : null,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
-              icon: Icon(_copied ? LucideIcons.check : LucideIcons.copy, size: 16),
+              icon: Icon(_copied ? FluentIcons.checkmark_24_regular : FluentIcons.copy_24_regular, size: 16),
               label: Text(_copied ? l10n.copied : l10n.copy),
             ),
           ],

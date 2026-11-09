@@ -58,16 +58,22 @@ class FileGridView extends StatelessWidget {
                 SliverPadding(
                   padding: EdgeInsets.all(spacing),
                   sliver: SliverLayoutBuilder(
-                    builder: (context, constraints) => SliverGrid.builder(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: _columnsFor(constraints.crossAxisExtent, spacing),
-                        mainAxisExtent: _folderHeight,
-                        mainAxisSpacing: spacing,
-                        crossAxisSpacing: spacing,
-                      ),
-                      itemCount: folders.length,
-                      itemBuilder: (context, index) => _FolderTile(entry: folders[index], interactions: interactions),
-                    ),
+                    builder: (context, constraints) {
+                      final width = constraints.crossAxisExtent;
+                      final columns = _columnsFor(width, spacing);
+                      final tileWidth = _tileWidth(width, columns, spacing);
+                      return SliverGrid.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          mainAxisExtent: _folderHeight,
+                          mainAxisSpacing: spacing,
+                          crossAxisSpacing: spacing,
+                        ),
+                        itemCount: folders.length,
+                        itemBuilder: (context, index) =>
+                            _FolderTile(entry: folders[index], interactions: interactions, tileWidth: tileWidth),
+                      );
+                    },
                   ),
                 ),
                 SliverPadding(
@@ -76,7 +82,7 @@ class FileGridView extends StatelessWidget {
                     builder: (context, constraints) {
                       final width = constraints.crossAxisExtent;
                       final columns = _columnsFor(width, spacing);
-                      final tileWidth = (width - spacing * (columns - 1)) / columns;
+                      final tileWidth = _tileWidth(width, columns, spacing);
                       return SliverGrid.builder(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: columns,
@@ -85,7 +91,8 @@ class FileGridView extends StatelessWidget {
                           crossAxisSpacing: spacing,
                         ),
                         itemCount: files.length,
-                        itemBuilder: (context, index) => _FileCard(entry: files[index], interactions: interactions),
+                        itemBuilder: (context, index) =>
+                            _FileCard(entry: files[index], interactions: interactions, tileWidth: tileWidth),
                       );
                     },
                   ),
@@ -101,6 +108,8 @@ class FileGridView extends StatelessWidget {
   int _columnsFor(double width, double spacing) =>
       min(_fit(width + reservedWidth, _minimumTileWidth, spacing), _fit(width, _minimumScaledTileWidth, spacing));
 
+  static double _tileWidth(double width, int columns, double spacing) => (width - spacing * (columns - 1)) / columns;
+
   static int _fit(double width, double tileWidth, double spacing) =>
       max(_minimumColumns, ((width + spacing) / (tileWidth + spacing)).floor());
 
@@ -110,10 +119,11 @@ class FileGridView extends StatelessWidget {
 }
 
 class _FolderTile extends StatelessWidget {
-  const _FolderTile({required this.entry, required this.interactions});
+  const _FolderTile({required this.entry, required this.interactions, required this.tileWidth});
 
   final ItemEntry entry;
   final ItemInteractions interactions;
+  final double tileWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +133,7 @@ class _FolderTile extends StatelessWidget {
       interactions: interactions,
       shape: FileGridView._shape(),
       color: FileGridView._cardColor(context),
+      dragFeedbackWidth: tileWidth,
       child: Padding(
         padding: EdgeInsetsDirectional.only(start: spacing),
         child: Row(
@@ -130,6 +141,7 @@ class _FolderTile extends StatelessWidget {
             ItemLeading(entry: entry, interactions: interactions),
             SizedBox(width: spacing),
             Expanded(child: Text(entry.name, maxLines: 1, overflow: TextOverflow.ellipsis)),
+            ItemIndicators(entry: entry),
             ItemMoreButton(entry: entry, interactions: interactions),
           ],
         ),
@@ -139,7 +151,7 @@ class _FolderTile extends StatelessWidget {
 }
 
 class _FileCard extends ConsumerWidget {
-  const _FileCard({required this.entry, required this.interactions});
+  const _FileCard({required this.entry, required this.interactions, required this.tileWidth});
 
   static const _headerHeight = 52.0;
   static const _footerHeight = 28.0;
@@ -151,6 +163,7 @@ class _FileCard extends ConsumerWidget {
 
   final ItemEntry entry;
   final ItemInteractions interactions;
+  final double tileWidth;
 
   static double heightFor(double width, double spacing) {
     final insets = _insets(spacing);
@@ -202,6 +215,7 @@ class _FileCard extends ConsumerWidget {
       interactions: interactions,
       shape: FileGridView._shape(),
       color: FileGridView._cardColor(context),
+      dragFeedbackWidth: tileWidth,
       child: Padding(
         padding: _insets(spacing),
         child: Column(
@@ -211,13 +225,7 @@ class _FileCard extends ConsumerWidget {
               height: _headerHeight,
               child: Row(
                 children: [
-                  ItemLeading(
-                    entry: entry,
-                    interactions: interactions,
-                    size: _iconSize,
-                    showPreview: false,
-                    showMarks: false,
-                  ),
+                  ItemLeading(entry: entry, interactions: interactions, size: _iconSize, showPreview: false),
                   SizedBox(width: spacing * 0.75),
                   Expanded(
                     child: Text(
@@ -227,6 +235,7 @@ class _FileCard extends ConsumerWidget {
                       style: theme.textTheme.titleSmall,
                     ),
                   ),
+                  ItemIndicators(entry: entry),
                   ItemMoreButton(entry: entry, interactions: interactions),
                 ],
               ),
@@ -235,19 +244,16 @@ class _FileCard extends ConsumerWidget {
               aspectRatio: _previewAspectRatio,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(_previewRadius),
-                child: PreviewMarks(
-                  entry: entry,
-                  child: ColoredBox(
-                    color: theme.colorScheme.surface,
-                    child: entry.hasPreview
-                        ? ItemThumbnail(
-                            key: ValueKey(entry.id),
-                            entry: entry,
-                            source: interactions.source,
-                            placeholder: placeholder,
-                          )
-                        : placeholder,
-                  ),
+                child: ColoredBox(
+                  color: theme.colorScheme.surface,
+                  child: entry.hasPreview
+                      ? ItemThumbnail(
+                          key: ValueKey(entry.id),
+                          entry: entry,
+                          source: interactions.source,
+                          placeholder: placeholder,
+                        )
+                      : placeholder,
                 ),
               ),
             ),

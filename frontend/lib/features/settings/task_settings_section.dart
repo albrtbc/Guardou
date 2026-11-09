@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/task_concurrency.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -16,7 +16,7 @@ class TaskSettingsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return SettingsSection(
-      icon: LucideIcons.refreshCw,
+      icon: FluentIcons.arrow_sync_24_regular,
       title: l10n.taskSettings,
       description: l10n.taskSettingsDescription,
       value: ref.watch(taskSettingsProvider),

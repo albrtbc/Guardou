@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../app/router/routes.dart';
 import '../../app/theme/app_tokens.dart';
@@ -45,7 +45,7 @@ class AdminShell extends StatelessWidget {
               backgroundColor: Colors.transparent,
               leading: IconButton(
                 tooltip: l10n.backToFiles,
-                icon: const Icon(LucideIcons.arrowLeft),
+                icon: const Icon(FluentIcons.arrow_left_24_regular),
                 onPressed: () => context.go(Routes.files),
               ),
               destinations: [
@@ -101,7 +101,7 @@ class AdminNavigation extends StatelessWidget {
             alignment: AlignmentDirectional.centerStart,
             child: TextButton.icon(
               onPressed: () => context.go(Routes.files),
-              icon: const Icon(LucideIcons.arrowLeft, size: 18),
+              icon: const Icon(FluentIcons.arrow_left_24_regular, size: 18),
               label: Text(l10n.backToFiles),
             ),
           ),

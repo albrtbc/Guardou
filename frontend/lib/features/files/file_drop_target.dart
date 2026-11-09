@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/browser/browser_files.dart';
 import 'file_actions.dart';
+import 'item_drag.dart';
 
 class DropTargetRegistration {
   DropTargetRegistration(this.key, this.onDrop);
@@ -153,9 +154,21 @@ class _FileDropTargetState extends ConsumerState<FileDropTarget> {
     super.dispose();
   }
 
+  bool _accepts(DraggedItems items) => widget.enabled && items.canMoveTo(widget.folderId);
+
+  void _move(DraggedItems items) => unawaited(FileActions(context).move(items.entries, widget.folderId));
+
   @override
   Widget build(BuildContext context) {
-    final hovered = ref.watch(fileDropControllerProvider.select((target) => target == _registration));
+    final filesHovered = ref.watch(fileDropControllerProvider.select((target) => target == _registration));
+    return DragTarget<DraggedItems>(
+      onWillAcceptWithDetails: (details) => _accepts(details.data),
+      onAcceptWithDetails: (details) => _move(details.data),
+      builder: (context, candidates, _) => _highlight(context, hovered: filesHovered || candidates.isNotEmpty),
+    );
+  }
+
+  Widget _highlight(BuildContext context, {required bool hovered}) {
     final colorScheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       key: _key,

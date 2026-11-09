@@ -1,16 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import 'file_actions.dart';
 import 'item_actions_menu.dart';
 
 enum NewItemKind {
-  folder(LucideIcons.folderPlus),
-  fileUpload(LucideIcons.fileUp),
-  folderUpload(LucideIcons.folderUp);
+  folder(FluentIcons.folder_add_24_regular),
+  fileUpload(FluentIcons.document_arrow_up_20_regular),
+  folderUpload(FluentIcons.folder_arrow_up_24_regular);
 
   const NewItemKind(this.icon);
 

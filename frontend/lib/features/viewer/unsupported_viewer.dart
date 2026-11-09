@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_entry.dart';
 import '../../app/theme/app_tokens.dart';
@@ -35,7 +35,7 @@ class UnsupportedViewer extends ConsumerWidget {
             SizedBox(height: spacing),
             FilledButton.icon(
               onPressed: () => browser.download(source.downloadUri(entry.id)),
-              icon: const Icon(LucideIcons.download),
+              icon: const Icon(FluentIcons.arrow_download_24_regular),
               label: Text(l10n.actionDownload),
             ),
           ],

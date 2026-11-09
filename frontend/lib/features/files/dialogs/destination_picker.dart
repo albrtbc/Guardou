@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../../api/generated/models/item_kind.dart';
 import '../../../app/router/routes.dart';
@@ -91,10 +91,10 @@ class _DestinationPickerState extends ConsumerState<_DestinationPicker> {
         ),
         ListTile(
           leading: parentId == null
-              ? const Icon(LucideIcons.house)
+              ? const Icon(FluentIcons.home_24_regular)
               : IconButton(
                   tooltip: l10n.parentFolder,
-                  icon: const Icon(LucideIcons.arrowLeft),
+                  icon: const Icon(FluentIcons.arrow_left_24_regular),
                   onPressed: () => setState(() => _folderId = parentId),
                 ),
           title: Text(folder == null ? l10n.loading : folderLabel(folder.entry, l10n)),
@@ -107,9 +107,9 @@ class _DestinationPickerState extends ConsumerState<_DestinationPicker> {
                   children: [
                     for (final subfolder in subfolders)
                       ListTile(
-                        leading: const Icon(LucideIcons.folder),
+                        leading: const Icon(FluentIcons.folder_24_regular),
                         title: Text(subfolder.name, overflow: TextOverflow.ellipsis),
-                        trailing: const Icon(LucideIcons.chevronRight),
+                        trailing: const Icon(FluentIcons.chevron_right_24_regular),
                         onTap: () => setState(() => _folderId = subfolder.id),
                       ),
                   ],
@@ -123,7 +123,7 @@ class _DestinationPickerState extends ConsumerState<_DestinationPicker> {
               IconButton(
                 tooltip: l10n.newFolder,
                 onPressed: canAdd ? _createFolder : null,
-                icon: const Icon(LucideIcons.folderPlus),
+                icon: const Icon(FluentIcons.folder_add_24_regular),
               ),
               const Spacer(),
               TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.cancel)),

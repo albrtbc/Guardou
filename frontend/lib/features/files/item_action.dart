@@ -1,20 +1,20 @@
 import 'package:flutter/widgets.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_entry.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 enum ItemAction {
-  open(LucideIcons.externalLink),
-  download(LucideIcons.download),
-  share(LucideIcons.userPlus),
-  star(LucideIcons.star),
-  unstar(LucideIcons.starOff),
-  rename(LucideIcons.pencil),
-  move(LucideIcons.folderInput),
-  copy(LucideIcons.copy),
-  details(LucideIcons.info),
-  trash(LucideIcons.trash2);
+  open(FluentIcons.open_24_regular),
+  download(FluentIcons.arrow_download_24_regular),
+  share(FluentIcons.person_add_24_regular),
+  star(FluentIcons.star_24_regular),
+  unstar(FluentIcons.star_off_24_regular),
+  rename(FluentIcons.edit_24_regular),
+  move(FluentIcons.folder_arrow_right_24_regular),
+  copy(FluentIcons.copy_24_regular),
+  details(FluentIcons.info_24_regular),
+  trash(FluentIcons.delete_24_regular);
 
   const ItemAction(this.icon);
 

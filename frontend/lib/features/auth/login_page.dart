@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/authentication_method.dart';
 import '../../app/router/redirect_guard.dart';
@@ -74,12 +74,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           passwordLogin
               ? OutlinedButton.icon(
                   onPressed: _loginWithOidc,
-                  icon: const Icon(LucideIcons.keyRound, size: 18),
+                  icon: const Icon(FluentIcons.key_24_regular, size: 18),
                   label: Text(l10n.loginWithOidc),
                 )
               : FilledButton.icon(
                   onPressed: _loginWithOidc,
-                  icon: const Icon(LucideIcons.keyRound, size: 18),
+                  icon: const Icon(FluentIcons.key_24_regular, size: 18),
                   label: Text(l10n.loginWithOidc),
                 ),
         if (oidcLogin && passwordLogin)

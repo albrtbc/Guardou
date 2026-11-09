@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/locked_setting.dart';
 import '../../app/theme/app_tokens.dart';
@@ -269,7 +269,9 @@ class SettingsTextField extends StatelessWidget {
         decoration: settingsInputDecoration(context).copyWith(
           helperText: reason,
           helperMaxLines: 3,
-          suffixIcon: reason == null ? null : Tooltip(message: reason, child: const Icon(LucideIcons.lock, size: 18)),
+          suffixIcon: reason == null
+              ? null
+              : Tooltip(message: reason, child: const Icon(FluentIcons.lock_closed_24_regular, size: 18)),
         ),
         onChanged: onChanged,
         validator: validator,

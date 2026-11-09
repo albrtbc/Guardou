@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/user_account.dart';
 import '../../app/theme/app_tokens.dart';
@@ -33,7 +33,7 @@ class UsersPage extends ConsumerWidget {
               Expanded(child: Text(l10n.userManagement)),
               TextButton.icon(
                 onPressed: () => unawaited(UserActions(context).create()),
-                icon: const Icon(LucideIcons.userPlus, size: 18),
+                icon: const Icon(FluentIcons.person_add_24_regular, size: 18),
                 label: Text(l10n.createUser),
               ),
             ],
@@ -46,7 +46,7 @@ class UsersPage extends ConsumerWidget {
             child: switch (ref.watch(usersControllerProvider)) {
               AsyncValue(:final value?) => compact ? _UserList(users: value) : _UserTable(users: value),
               AsyncValue(error: _?) => FolderMessage(
-                icon: LucideIcons.serverCrash,
+                icon: FluentIcons.cloud_error_24_regular,
                 title: l10n.usersLoadErrorTitle,
                 message: l10n.genericError,
                 action: FilledButton(
@@ -262,7 +262,7 @@ class _UserMenu extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return PopupMenuButton<_UserMenuAction>(
       tooltip: l10n.moreActions,
-      icon: const Icon(LucideIcons.ellipsisVertical),
+      icon: const Icon(FluentIcons.more_vertical_24_regular),
       onSelected: (action) {
         final actions = UserActions(context);
         unawaited(switch (action) {
@@ -273,12 +273,12 @@ class _UserMenu extends StatelessWidget {
       itemBuilder: (_) => [
         PopupMenuItem(
           value: _UserMenuAction.edit,
-          child: ListTile(leading: const Icon(LucideIcons.pencil), title: Text(l10n.userEdit)),
+          child: ListTile(leading: const Icon(FluentIcons.edit_24_regular), title: Text(l10n.userEdit)),
         ),
         PopupMenuItem(
           value: _UserMenuAction.delete,
           enabled: !isCurrent,
-          child: ListTile(leading: const Icon(LucideIcons.trash2), title: Text(l10n.userDelete)),
+          child: ListTile(leading: const Icon(FluentIcons.delete_24_regular), title: Text(l10n.userDelete)),
         ),
       ],
     );

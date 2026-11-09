@@ -1,7 +1,7 @@
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/layout/window_size_class.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -49,8 +49,8 @@ class _SharedJoinButtonState extends ConsumerState<SharedJoinButton> {
     if (ref.watch(sharedItemOpenableProvider(widget.itemId)).value case final openable?) {
       final l10n = AppLocalizations.of(context);
       return openable
-          ? _action(label: l10n.actionOpen, icon: LucideIcons.folderOpen, onPressed: _open)
-          : _action(label: l10n.sharedLinkJoin, icon: LucideIcons.folderPlus, onPressed: _joining ? null : _join);
+          ? _action(label: l10n.actionOpen, icon: FluentIcons.folder_open_24_regular, onPressed: _open)
+          : _action(label: l10n.sharedLinkJoin, icon: FluentIcons.folder_add_24_regular, onPressed: _joining ? null : _join);
     }
     return const SizedBox.shrink();
   }

@@ -6,7 +6,7 @@ import 'package:guardou/features/uploads/upload_item.dart';
 import 'package:guardou/features/uploads/upload_panel.dart';
 import 'package:guardou/features/uploads/upload_queue_controller.dart';
 import 'package:guardou/l10n/generated/app_localizations.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../helpers/test_app.dart';
 
@@ -49,7 +49,7 @@ void main() {
 
     expect(find.text('1 upload complete'), findsOneWidget);
     expect(find.text(name), findsOneWidget);
-    expect(find.byIcon(LucideIcons.check), findsOneWidget);
+    expect(find.byIcon(FluentIcons.checkmark_24_regular), findsOneWidget);
   });
 
   testWidgets('shows the active uploads with the progress and the time left', (tester) async {
@@ -87,6 +87,6 @@ void main() {
   testWidgets('shows nothing when the queue is empty', (tester) async {
     await pumpPanel(tester, const UploadQueueState());
 
-    expect(find.byIcon(LucideIcons.x), findsNothing);
+    expect(find.byIcon(FluentIcons.dismiss_24_regular), findsNothing);
   });
 }

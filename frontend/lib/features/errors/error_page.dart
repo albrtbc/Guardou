@@ -66,7 +66,7 @@ class ErrorPage extends ConsumerWidget {
                 children: [
                   if (kind == ErrorKind.serverError)
                     FilledButton(onPressed: () => _retry(ref), child: Text(l10n.errorRetry)),
-                  OutlinedButton(onPressed: () => context.go(Routes.home), child: Text(l10n.errorGoHome)),
+                  OutlinedButton(onPressed: () => context.go(Routes.root), child: Text(l10n.errorGoToStartPage)),
                 ],
               ),
             ],

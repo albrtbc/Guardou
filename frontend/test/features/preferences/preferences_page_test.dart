@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:guardou/api/generated/models/language.dart';
+import 'package:guardou/api/generated/models/start_page.dart';
 import 'package:guardou/api/generated/models/theme_preference.dart';
 import 'package:guardou/api/generated/models/upload_conflict_policy.dart';
 import 'package:guardou/api/generated/models/user_preferences.dart';
 import 'package:guardou/features/preferences/preferences_page.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:guardou/features/starred/starred_page.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/test_app.dart';
@@ -15,6 +17,7 @@ void main() {
   const saved = UserPreferences(
     theme: ThemePreference.dark,
     language: Language.en,
+    startPage: StartPage.starred,
     uploadConflictPolicy: UploadConflictPolicy.rename,
   );
 
@@ -64,7 +67,7 @@ void main() {
       await pumpPreferences(tester, size: size);
 
       expect(find.byType(PreferencesPage), findsOneWidget);
-      expect(find.text('Appearance'), findsOneWidget);
+      expect(find.text('General'), findsOneWidget);
       expect(find.text('Uploads'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -77,19 +80,23 @@ void main() {
     expect(app(tester).locale, const Locale('en'));
   });
 
-  testWidgets('saves the appearance and keeps the upload preference', (tester) async {
+  testWidgets('saves the general preferences and keeps the upload preference', (tester) async {
     await pumpPreferences(tester);
-    await expand(tester, 'Appearance');
+    await expand(tester, 'General');
 
     await choose(tester, 'Dark', 'Light');
     await choose(tester, 'English', 'Português (Brasil)');
-    await tapIn(tester, section(LucideIcons.palette), 'Save');
+    await tapIn(tester, section(FluentIcons.settings_24_regular), 'Starred');
+    await tester.tap(find.text('Suggested').last);
+    await tester.pumpAndSettle();
+    await tapIn(tester, section(FluentIcons.settings_24_regular), 'Save');
 
     verify(
       () => preferences.change(
         const UserPreferences(
           theme: ThemePreference.light,
           language: Language.ptBr,
+          startPage: StartPage.suggested,
           uploadConflictPolicy: UploadConflictPolicy.rename,
         ),
       ),
@@ -103,16 +110,26 @@ void main() {
     await expand(tester, 'Uploads');
 
     await choose(tester, 'Keep both items', 'Skip this item');
-    await tapIn(tester, section(LucideIcons.upload), 'Save');
+    await tapIn(tester, section(FluentIcons.arrow_upload_24_regular), 'Save');
 
     verify(() => preferences.change(saved.copyWith(uploadConflictPolicy: UploadConflictPolicy.skip))).called(1);
+  });
+
+  testWidgets('opens the start page at the root', (tester) async {
+    await pumpRoutedApp(
+      tester,
+      location: '/',
+      overrides: serviceOverrides(auth: MockAuthService(), preferences: preferences),
+    );
+
+    expect(find.byType(StarredPage), findsOneWidget);
   });
 
   testWidgets('restores the defaults in the form without a save', (tester) async {
     await pumpPreferences(tester);
     await expand(tester, 'Uploads');
 
-    await tapIn(tester, section(LucideIcons.upload), 'Restore the default settings');
+    await tapIn(tester, section(FluentIcons.arrow_upload_24_regular), 'Restore the default settings');
 
     expect(find.text('Ask each time'), findsOneWidget);
     verifyNever(() => preferences.change(any()));

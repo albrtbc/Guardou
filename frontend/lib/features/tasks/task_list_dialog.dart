@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/task_entry.dart';
 import '../../api/generated/models/task_kind.dart';
@@ -64,13 +64,13 @@ class _TaskListView extends ConsumerWidget {
                     if (hasFailed)
                       TextButton.icon(
                         onPressed: () => unawaited(TaskActions(context).resetFailed(kind)),
-                        icon: const Icon(LucideIcons.rotateCcw, size: 18),
+                        icon: const Icon(FluentIcons.arrow_counterclockwise_24_regular, size: 18),
                         label: Text(l10n.tasksResetFailed),
                       ),
                     IconButton(
                       tooltip: l10n.close,
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(LucideIcons.x),
+                      icon: const Icon(FluentIcons.dismiss_24_regular),
                     ),
                   ],
                 ),
@@ -130,7 +130,7 @@ class _TaskMenu extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return PopupMenuButton<_TaskMenuAction>(
       tooltip: l10n.moreActions,
-      icon: const Icon(LucideIcons.ellipsisVertical),
+      icon: const Icon(FluentIcons.more_vertical_24_regular),
       onSelected: (action) {
         final actions = TaskActions(context);
         unawaited(switch (action) {
@@ -142,12 +142,15 @@ class _TaskMenu extends StatelessWidget {
         PopupMenuItem(
           value: _TaskMenuAction.run,
           enabled: canRun(task),
-          child: ListTile(leading: const Icon(LucideIcons.play), title: Text(l10n.taskRunNow)),
+          child: ListTile(leading: const Icon(FluentIcons.play_24_regular), title: Text(l10n.taskRunNow)),
         ),
         PopupMenuItem(
           value: _TaskMenuAction.reset,
           enabled: canReset(task),
-          child: ListTile(leading: const Icon(LucideIcons.rotateCcw), title: Text(l10n.taskReset)),
+          child: ListTile(
+            leading: const Icon(FluentIcons.arrow_counterclockwise_24_regular),
+            title: Text(l10n.taskReset),
+          ),
         ),
       ],
     );

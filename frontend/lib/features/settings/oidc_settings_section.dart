@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/oidc_settings_change.dart';
 import '../../api/generated/models/oidc_settings_view.dart';
@@ -16,7 +16,7 @@ class OidcSettingsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return SettingsSection(
-      icon: LucideIcons.keyRound,
+      icon: FluentIcons.key_24_regular,
       title: l10n.oidcSettings,
       description: l10n.oidcSettingsDescription,
       value: ref.watch(oidcSettingsProvider),

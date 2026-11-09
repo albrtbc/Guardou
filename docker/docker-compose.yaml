@@ -7,7 +7,7 @@ services:
     # Pin a version, never :latest: the server migrates the database on start and the
     # migrations cannot be undone, so an unattended upgrade could cross a breaking change.
     # For a stricter pin, add the image digest, as in <version>@sha256:<digest>.
-    image: ghcr.io/albrtbc/guardou:0.10.0-fork.1
+    image: ghcr.io/albrtbc/guardou:0.11.0-fork.1
     container_name: guardou
     env_file:
       - .env

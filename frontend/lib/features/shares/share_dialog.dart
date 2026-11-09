@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_entry.dart';
 import '../../app/theme/app_tokens.dart';
@@ -84,7 +84,7 @@ class ShareDialog extends ConsumerWidget {
         if (link != null)
           OutlinedButton.icon(
             onPressed: () => _copy(context, link),
-            icon: const Icon(LucideIcons.link),
+            icon: const Icon(FluentIcons.link_24_regular),
             label: Text(l10n.shareCopyLink),
           ),
         FilledButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.done)),
@@ -129,7 +129,7 @@ class _AccessSelector extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: spacing),
-                const Icon(LucideIcons.chevronDown),
+                const Icon(FluentIcons.chevron_down_24_regular),
               ],
             ),
           ),
@@ -139,7 +139,7 @@ class _AccessSelector extends StatelessWidget {
         for (final option in ShareAccess.values)
           MenuItemButton(
             leadingIcon: Icon(option.icon),
-            trailingIcon: option == access ? const Icon(LucideIcons.check) : null,
+            trailingIcon: option == access ? const Icon(FluentIcons.checkmark_24_regular) : null,
             onPressed: option == access ? null : () => onChanged(option),
             child: Text(option.label(l10n)),
           ),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:guardou/api/generated/models/breadcrumb.dart';
+import 'package:guardou/api/generated/models/conflict_policy.dart';
 import 'package:guardou/api/generated/models/item_kind.dart';
 import 'package:guardou/api/generated/models/preview_size.dart';
 import 'package:guardou/app/router/app_router.dart';
@@ -63,6 +64,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(PreviewSize.thumbnail);
     registerFallbackValue(CancelToken());
+    registerFallbackValue(ConflictPolicy.fail);
   });
 
   setUp(() => files = stubFiles(folders: folders));
@@ -164,8 +166,8 @@ void main() {
 
   testWidgets('selects items with a drag box', (tester) async {
     await pumpFolder(tester, '/folders/docs');
-    final start = tester.getCenter(find.text('big.txt')) + const Offset(300, 0);
-    final end = tester.getCenter(find.text('small.txt')) + const Offset(300, 0);
+    final start = tester.getCenter(find.text('small.txt')) + const Offset(300, 100);
+    final end = tester.getCenter(find.text('big.txt')) + const Offset(300, 0);
 
     final gesture = await tester.startGesture(start, kind: PointerDeviceKind.mouse);
     await gesture.moveTo(start + const Offset(0, 10));
@@ -175,6 +177,64 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('2 selected'), findsOneWidget);
+  });
+
+  Future<TestGesture> dragTo(WidgetTester tester, String from, String to) async {
+    final target = tester.getCenter(find.text(to));
+    final gesture = await tester.startGesture(tester.getCenter(find.text(from)), kind: PointerDeviceKind.mouse);
+    await gesture.moveBy(const Offset(0, 10));
+    await tester.pump();
+    await gesture.moveTo(target);
+    await tester.pump();
+    return gesture;
+  }
+
+  void stubMove() => when(
+    () => files.move(any(), any(), any()),
+  ).thenAnswer((invocation) async => testEntry(invocation.positionalArguments.first as String));
+
+  testWidgets('moves the selected items into a folder with a drag', (tester) async {
+    stubMove();
+    await pumpFolder(tester, '/folders/docs');
+    await tester.tap(find.text('small.txt'));
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.tap(find.text('big.txt'));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+
+    final gesture = await dragTo(tester, 'big.txt', 'reports');
+    expect(find.text('2 selected'), findsNWidgets(2));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    verify(() => files.move('small.txt', 'reports', any())).called(1);
+    verify(() => files.move('big.txt', 'reports', any())).called(1);
+  });
+
+  testWidgets('moves an item that is not selected with a drag', (tester) async {
+    stubMove();
+    await pumpFolder(tester, '/folders/docs');
+    await tester.tap(find.text('big.txt'));
+    await tester.pumpAndSettle();
+
+    final gesture = await dragTo(tester, 'small.txt', 'reports');
+    expect(find.text('small.txt'), findsNWidgets(2));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    verify(() => files.move('small.txt', 'reports', any())).called(1);
+    verifyNever(() => files.move('big.txt', any(), any()));
+  });
+
+  testWidgets('does not move a folder into itself', (tester) async {
+    stubMove();
+    await pumpFolder(tester, '/folders/docs');
+
+    final gesture = await dragTo(tester, 'reports', 'reports');
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    verifyNever(() => files.move(any(), any(), any()));
   });
 
   testWidgets('renames an item from the selection toolbar', (tester) async {

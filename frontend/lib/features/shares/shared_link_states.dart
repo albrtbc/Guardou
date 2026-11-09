@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../app/theme/app_tokens.dart';
 import '../../core/widgets/brand_mark.dart';
@@ -48,7 +48,10 @@ class SharedLinkError extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(_unavailable ? LucideIcons.link2Off : LucideIcons.circleAlert, size: _iconSize),
+              Icon(
+                _unavailable ? FluentIcons.link_dismiss_24_regular : FluentIcons.error_circle_24_regular,
+                size: _iconSize,
+              ),
               SizedBox(height: spacing),
               Text(
                 _unavailable ? l10n.sharedLinkUnavailable : l10n.genericError,

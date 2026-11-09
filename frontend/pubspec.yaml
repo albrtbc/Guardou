@@ -1,7 +1,7 @@
 name: guardou
 description: Guardou web client.
 publish_to: none
-version: 0.10.0 # x-release-please-version
+version: 0.11.0 # x-release-please-version
 
 environment:
   sdk: ^3.10.0
@@ -10,6 +10,7 @@ environment:
 dependencies:
   clock: ^1.1.2
   dio: ^5.11.1
+  fluentui_system_icons: ^1.1.273
   flutter:
     sdk: flutter
   flutter_localizations:
@@ -22,7 +23,6 @@ dependencies:
   go_router: ^18.1.0
   intl: ^0.20.3
   json_annotation: ^4.12.0
-  lucide_icons_flutter: ^4.0.0
   retrofit: ^4.10.0
   web: ^1.1.1
 

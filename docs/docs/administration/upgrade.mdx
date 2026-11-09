@@ -1,18 +1,26 @@
 ---
-sidebar_position: 4
-description: Upgrade Guardou, or move from upstream to this fork
+sidebar_position: 6
+description: Upgrade Guardou, breaking changes, and moving from upstream to this fork
 ---
 
-# Upgrading
+# Upgrade
 
-## Upgrade steps
-
-1. [Back up](./backup.mdx) the data folder. Guardou migrates the database when it starts, and migrations can't be undone.
+1. Make a [backup](./backup) of the data folder. Guardou updates the database when it starts, and those migrations can't be undone.
 2. Change the image tag in `docker-compose.yaml` to the new version. Don't use `latest`.
-3. Run `docker compose pull`, then `docker compose up -d`.
+3. From the folder that contains `docker-compose.yaml`, run:
+
+   ```bash
+   docker compose pull
+   docker compose up -d
+   ```
+
 4. Check `docker compose logs guardou`, and that the container turns healthy.
 
-Compare your `docker-compose.yaml` and `.env` with the ones of the new release. New releases can add settings.
+Compare your `docker-compose.yaml` and `.env` with the ones attached to the new release. New releases can add settings.
+
+## Breaking changes
+
+Read the release notes of each version that you skip: this [fork's releases](https://github.com/albrtbc/Guardou/releases), and [upstream's releases](https://github.com/GuardouApp/Guardou/releases) for the upstream changes they include.
 
 ---
 
@@ -20,10 +28,11 @@ Compare your `docker-compose.yaml` and `.env` with the ones of the new release. 
 
 Use the same data folder and change the image from `ghcr.io/guardouapp/guardou` to `ghcr.io/albrtbc/guardou`. Back up first.
 
-The fork doesn't add database migrations of its own. Its base is upstream `v0.10.0` plus a later upstream commit that adds the `AddStorageQuotas` migration. This has consequences:
+The fork adds no database migrations of its own. Each fork release `X.Y.Z-fork.N` is based on upstream `X.Y.Z`, sometimes with a few later upstream commits; its release notes say which.
 
-- Moving from upstream `0.10.0` applies a migration that `0.10.0` doesn't know. You can't go back to it with the new data folder.
-- Only move from an upstream version at or below the fork's base. A newer upstream version may have migrations that the fork doesn't know.
+- Moving from the same upstream version needs no migration.
+- Moving from an older upstream version applies the same migrations as upgrading upstream would.
+- Don't move from an upstream version newer than the fork's base. It may have migrations that the fork doesn't know.
 - Going back means restoring the backup you made first.
 
 ## What you will notice on the first start

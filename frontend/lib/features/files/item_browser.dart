@@ -22,6 +22,7 @@ import 'files_service.dart';
 import 'folder_layouts.dart';
 import 'item_action.dart';
 import 'item_actions_menu.dart';
+import 'item_drag.dart';
 import 'item_interactions.dart';
 import 'new_item_menu.dart';
 import 'selection.dart';
@@ -130,7 +131,25 @@ class _ItemBrowserState extends ConsumerState<ItemBrowser> {
     }
   }
 
-  ItemInteractions _interactions(List<ItemEntry> entries, Selection selection) {
+  ItemDragging? _dragging(List<ItemEntry> selected, Selection selection) {
+    if (widget.folder == null) {
+      return null;
+    }
+    final selectedMovable = ItemAction.move.isEnabledFor(selected);
+    return ItemDragging(
+      itemsFor: (entry) => switch (selection.contains(entry.id)) {
+        true => selectedMovable ? selected : null,
+        false => ItemAction.move.isEnabledFor([entry]) ? [entry] : null,
+      },
+      onStarted: (entry) {
+        if (!selection.contains(entry.id)) {
+          _selection.select(entry.id);
+        }
+      },
+    );
+  }
+
+  ItemInteractions _interactions(List<ItemEntry> entries, List<ItemEntry> selected, Selection selection) {
     final order = [for (final entry in entries) entry.id];
     return ItemInteractions(
       selection: selection,
@@ -145,6 +164,7 @@ class _ItemBrowserState extends ConsumerState<ItemBrowser> {
           ? FileDropTarget(folderId: entry.id, enabled: entry.permissions.canAddChildren, child: child)
           : child,
       source: ref.read(filesServiceProvider),
+      dragging: _dragging(selected, selection),
     );
   }
 
@@ -187,8 +207,8 @@ class _ItemBrowserState extends ConsumerState<ItemBrowser> {
   Widget _contents(List<ItemEntry> entries, Selection selection, {required double reservedWidth}) {
     final layout = ref.watch(folderLayoutsProvider.select((layouts) => layouts.of(widget.layoutKey)));
     final scrollKey = '${widget.layoutKey}:${layout.name}';
-    final interactions = _interactions(entries, selection);
     final selected = entries.where((entry) => selection.contains(entry.id)).toList();
+    final interactions = _interactions(entries, selected, selection);
     void selectAll() => _selection.selectAll([for (final entry in entries) entry.id]);
 
     return _withDropTarget(

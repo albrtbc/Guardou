@@ -5,17 +5,34 @@ description: Environment variables
 
 # Environment Variables
 
-All Guardou settings are available through the Admin Panel at:
+Set the variables in the `.env` file next to `docker-compose.yaml`. Then run `docker compose up -d` to apply them. The [`example.env`](https://github.com/albrtbc/Guardou/releases/latest/download/example.env) file attached to each release lists them.
 
-`http://your-instance:2286/admin/settings`
+## Container
 
-If you prefer environment variables, they are documented in the [`example.env`](https://github.com/albrtbc/Guardou/releases/latest/download/example.env) file provided with each release.
+| Variable    | Default | Description                                                       |
+| ----------- | ------- | ----------------------------------------------------------------- |
+| `DATA_PATH` |         | Required. The host folder for files, database and thumbnails.     |
+| `PUID`      | `1000`  | The user ID that Guardou runs as. It must have write access to `DATA_PATH`. It can't be `0`. |
+| `PGID`      | `1000`  | The group ID that Guardou runs as. It can't be `0`.                |
 
-A setting given as an environment variable overrides the value in the Admin Panel.
+## Settings
 
----
+These variables override the settings under **Admin → Settings**. A field that is set by a variable is read-only in the admin panel.
+
+| Variable               | Default | Description                                                              |
+| ---------------------- | ------- | ------------------------------------------------------------------------ |
+| `EXTERNAL_URL`         |         | The public URL. Share links are built from it.                           |
+| `TRASH_RETENTION_DAYS` | `30`    | Items in the trash are deleted after this number of days. 1 to 3650.     |
+| `UPLOAD_CONCURRENCY`   | `3`     | Files that each client uploads at the same time. 1 to 6.                 |
+| `UPLOAD_CHUNK_SIZE_MB` | `64`    | The size of each upload request. 1 to 90. See [Reverse Proxy](./reverse-proxy). |
+| `MAX_FILE_SIZE_MB`     |         | The largest file a user can upload, in MB. Larger uploads are refused with `413`. Not set means no limit. 1 to 1,048,576. |
+| `MIN_FREE_SPACE_MB`    | `1024`  | The free space the server keeps, in MB. An upload or a copy that would leave less is refused with `507`. The bytes still pending in unfinished uploads of all users count as used. 0 to 1,048,576, where 0 keeps no reserve. |
+
+For the `OIDC_*` variables, see [Single Sign-On](./oidc).
 
 ## Reverse proxy
+
+These are not Admin Panel settings. Set them in the environment. See [Reverse Proxy](./reverse-proxy.mdx) for what to put in them and why.
 
 ### `TRUSTED_PROXIES`
 
@@ -24,22 +41,7 @@ A comma-separated list of the IP addresses or CIDR ranges of the reverse proxies
 - List only the direct proxies, the ones that connect to Guardou. Never list a whole network that also holds other containers.
 - Only these addresses may set `X-Forwarded-For` and `X-Forwarded-Proto`, and Guardou follows one hop.
 - Every entry must be an IP address or a CIDR range, with all four parts for IPv4 (`172.18.0.1`, not `172.18`). Guardou doesn't start if an entry is invalid.
-- It is not an Admin Panel setting. Set it in the environment.
-
-See [Reverse Proxy](./reverse-proxy.mdx) for what to put in it and why.
 
 ### `AllowedHosts`
 
 Not a Guardou variable, but ASP.NET Core's host filtering, which Guardou uses. A list of host names separated by `;`. The default is `*`. Keep `127.0.0.1` in the list, because the container's health check calls it, and `localhost`, so that `http://localhost:2286` keeps working. See [Reverse Proxy](./reverse-proxy.mdx#allowedhosts).
-
----
-
-## Uploads and storage
-
-### `MAX_FILE_SIZE_MB`
-
-The largest file a user can upload, in MB. Larger uploads are refused with `413`. Not set by default, which means no limit. Valid values are 1 to 1,048,576.
-
-### `MIN_FREE_SPACE_MB`
-
-The free space the server keeps, in MB. An upload or a copy that would leave less is refused with `507`. The bytes still pending in unfinished uploads of all users count as used. The default is `1024`. Valid values are 0 to 1,048,576, where 0 keeps no reserve.

@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../app/router/routes.dart';
 import '../../app/theme/app_tokens.dart';
@@ -46,7 +46,11 @@ class EmptyFolderView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return FolderMessage(icon: LucideIcons.folderOpen, title: l10n.emptyFolderTitle, message: l10n.emptyFolderMessage);
+    return FolderMessage(
+      icon: FluentIcons.folder_open_24_regular,
+      title: l10n.emptyFolderTitle,
+      message: l10n.emptyFolderMessage,
+    );
   }
 }
 
@@ -67,14 +71,14 @@ class FolderErrorView extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     if (_isNotFound) {
       return FolderMessage(
-        icon: LucideIcons.folderX,
+        icon: FluentIcons.folder_prohibited_24_regular,
         title: l10n.folderNotFoundTitle,
         message: l10n.folderNotFoundMessage,
         action: isRoot ? null : OutlinedButton(onPressed: () => context.go(Routes.files), child: Text(l10n.openRoot)),
       );
     }
     return FolderMessage(
-      icon: LucideIcons.serverCrash,
+      icon: FluentIcons.cloud_error_24_regular,
       title: l10n.folderLoadErrorTitle,
       message: l10n.genericError,
       action: FilledButton(onPressed: onRetry, child: Text(l10n.errorRetry)),

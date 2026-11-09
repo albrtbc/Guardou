@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_entry.dart';
 import '../../app/theme/app_tokens.dart';
@@ -26,7 +26,7 @@ class DetailsPanel extends StatelessWidget {
       children: [
         Row(
           children: [
-            item == null ? const Icon(LucideIcons.files) : ItemTypeIcon(item.type),
+            item == null ? const Icon(FluentIcons.document_copy_24_regular) : ItemTypeIcon(item.type),
             SizedBox(width: spacing / 2),
             Expanded(
               child: Text(
@@ -36,7 +36,7 @@ class DetailsPanel extends StatelessWidget {
               ),
             ),
             if (onClose case final close?)
-              IconButton(tooltip: l10n.close, onPressed: close, icon: const Icon(LucideIcons.x)),
+              IconButton(tooltip: l10n.close, onPressed: close, icon: const Icon(FluentIcons.dismiss_24_regular)),
           ],
         ),
         if (item != null) ...[

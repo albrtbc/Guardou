@@ -1,8 +1,8 @@
 import 'dart:async';
 
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons_600.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../files/file_actions.dart';
@@ -50,7 +50,7 @@ class NewItemButton extends ConsumerWidget {
     final canAdd = ref.watch(
       folderControllerProvider(folderId).select((folder) => folder.value?.entry.permissions.canAddChildren ?? false),
     );
-    const icon = Icon(LucideIcons600.plus);
+    const icon = Icon(FluentIcons.add_24_filled);
 
     if (style == NewItemButtonStyle.floating) {
       return FloatingActionButton(

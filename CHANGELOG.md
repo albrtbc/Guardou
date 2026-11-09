@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.11.0](https://github.com/GuardouApp/Guardou/compare/v0.10.0...v0.11.0) (2026-11-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename Recommended to Suggested and move the item marks next to the name ([#56](https://github.com/GuardouApp/Guardou/issues/56))
+* rename Home to Recommended and add the start page preference ([#55](https://github.com/GuardouApp/Guardou/issues/55))
+
+### Features
+
+* add storage quotas ([#53](https://github.com/GuardouApp/Guardou/issues/53)) ([aa6fed7](https://github.com/GuardouApp/Guardou/commit/aa6fed7cda332ad61f70834e2058dd1a7cd510c8))
+* rename Home to Recommended and add the start page preference ([#55](https://github.com/GuardouApp/Guardou/issues/55)) ([605c3fb](https://github.com/GuardouApp/Guardou/commit/605c3fbdd3923a61faca0cf128aff299a1707b67))
+* rename Recommended to Suggested and move the item marks next to the name ([#56](https://github.com/GuardouApp/Guardou/issues/56)) ([31bed4b](https://github.com/GuardouApp/Guardou/commit/31bed4ba27ae7f32f25cdf232f25bc8e8bc2d4ea))
+
 ## [0.10.0](https://github.com/GuardouApp/Guardou/compare/v0.9.1...v0.10.0) (2026-11-05)
 
 

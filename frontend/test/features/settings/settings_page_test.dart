@@ -263,7 +263,9 @@ void main() {
     );
     expect(externalUrl.readOnly, isTrue);
     expect(
-      find.text('Set by the environment variable EXTERNAL_URL. To change it, change the variable and restart the server.'),
+      find.text(
+        'Set by the environment variable EXTERNAL_URL. To change it, change the variable and restart the server.',
+      ),
       findsOneWidget,
     );
     final retention = tester.widget<TextField>(

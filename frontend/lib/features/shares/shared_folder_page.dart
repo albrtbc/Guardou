@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_details.dart';
 import '../../api/generated/models/item_entry.dart';
@@ -43,7 +43,10 @@ class SharedFolderPage extends ConsumerWidget {
     final key = (token: token, id: folderId);
     return switch (ref.watch(sharedDetailsProvider(key))) {
       AsyncValue(hasValue: true, :final value?) => _SharedFolder(token: token, folder: value),
-      AsyncValue(:final error?) => SharedLinkError(error: error, onRetry: () => ref.invalidate(sharedDetailsProvider(key))),
+      AsyncValue(:final error?) => SharedLinkError(
+        error: error,
+        onRetry: () => ref.invalidate(sharedDetailsProvider(key)),
+      ),
       _ => const SharedLoadingPage(),
     };
   }
@@ -122,7 +125,7 @@ class _SharedFolderState extends ConsumerState<_SharedFolder> {
           IconButton(
             tooltip: l10n.actionDownload,
             onPressed: () => _download(folder.entry),
-            icon: const Icon(LucideIcons.download),
+            icon: const Icon(FluentIcons.arrow_download_24_regular),
           ),
         ],
       ),

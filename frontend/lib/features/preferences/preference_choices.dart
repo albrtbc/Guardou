@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../api/generated/models/conflict_policy.dart';
 import '../../api/generated/models/language.dart';
+import '../../api/generated/models/start_page.dart';
 import '../../api/generated/models/theme_preference.dart';
 import '../../api/generated/models/upload_conflict_policy.dart';
+import '../../app/router/routes.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 extension ThemePreferenceChoice on ThemePreference {
@@ -49,5 +51,21 @@ extension UploadConflictPolicyChoice on UploadConflictPolicy {
     UploadConflictPolicy.rename => l10n.conflictRename,
     UploadConflictPolicy.skip => l10n.conflictSkip,
     UploadConflictPolicy.ask || UploadConflictPolicy.$unknown => l10n.uploadConflictAsk,
+  };
+}
+
+extension StartPageChoice on StartPage {
+  String get path => switch (this) {
+    StartPage.suggested => Routes.suggested,
+    StartPage.starred => Routes.starred,
+    StartPage.shared => Routes.shared,
+    StartPage.files || StartPage.$unknown => Routes.files,
+  };
+
+  String label(AppLocalizations l10n) => switch (this) {
+    StartPage.suggested => l10n.navigationSuggested,
+    StartPage.starred => l10n.navigationStarred,
+    StartPage.shared => l10n.navigationSharedWithMe,
+    StartPage.files || StartPage.$unknown => l10n.navigationFiles,
   };
 }

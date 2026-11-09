@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/upload_conflict_policy.dart';
 import '../../api/generated/models/user_preferences.dart';
@@ -16,7 +16,7 @@ class UploadSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return PreferencesSection(
-      icon: LucideIcons.upload,
+      icon: FluentIcons.arrow_upload_24_regular,
       title: l10n.uploadSettings,
       description: l10n.uploadSettingsDescription,
       builder: (preferences) => _UploadForm(preferences: preferences),

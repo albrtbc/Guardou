@@ -1,0 +1,38 @@
+---
+sidebar_position: 1
+description: Search syntax and filters
+---
+
+# Search
+
+The search bar finds files and folders by name.
+
+Put a phrase in quotes to search for the exact text, example: `"travel plan"`.
+
+## Filters
+
+Use the filter chips under the search bar, or type the filters:
+
+| Filter        | Example                     | Finds                                          |
+| ------------- | --------------------------- | ---------------------------------------------- |
+| `type:`       | `type:image`                | Items of the type.                             |
+|               | `type:image type:video`     | Items of any of the types.                     |
+| `modified:`   | `modified:today`            | Items changed today.                           |
+|               | `modified:7d`               | Items changed in the last 7 days.              |
+|               | `modified:2025`             | Items changed in 2025.                         |
+|               | `modified:2025-05-14`       | Items changed on that date.                     |
+|               | `modified:>2025`            | Items changed after 2025.                       |
+|               | `modified:<2025-01-14`      | Items changed before that date.                 |
+| `size:`       | `size:>10mb`                | Items larger than 10 MB. Units: `b`, `kb`, `mb`, `gb`, `tb`. |
+|               | `size:<500kb`               | Items smaller than 500 KB.                      |
+| `is:`         | `is:starred`                | Your starred items.                             |
+
+Types: `folder`, `image`, `video`, `audio`, `pdf`, `document`, `spreadsheet`, `presentation`, `archive`, `text`, `other`.
+
+## Example
+
+```text
+report type:pdf modified:30d size:>1mb
+```
+
+This finds PDF files larger than 1 MB, with `report` in the name, changed in the last 30 days.

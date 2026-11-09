@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 description: Run Guardou behind a reverse proxy and expose only share links
 ---
 
@@ -8,6 +8,13 @@ description: Run Guardou behind a reverse proxy and expose only share links
 Guardou serves plain HTTP on port 2286. For anything beyond one machine, put a reverse proxy in front of it. The proxy terminates TLS and applies the limits that the app leaves to the edge.
 
 Caddy, Cloudflare and nginx are used as examples. Any proxy that can do the same works.
+
+---
+
+## Requirements
+
+- Set **External URL** under **Admin → Settings → Server**, or `EXTERNAL_URL` ([below](#external_url)).
+- Permit request bodies at least as large as the upload chunk size (`UPLOAD_CHUNK_SIZE_MB`, default 64 MB). In nginx that is `client_max_body_size`; Caddy sets no limit by default.
 
 ---
 
@@ -255,4 +262,4 @@ Don't repeat these at the proxy, unless you want a stricter limit.
 - [ ] If you expose share links, requests for any other path fail, in any letter case, and the share page loads. Only `/api/config`, and `/api/auth/me` if you don't answer it with `401`, are refused.
 - [ ] Bandwidth and connection limits are set on `/download` and `/view`.
 - [ ] Backups are encrypted and tested ([Backup](./backup.mdx)).
-- [ ] The image is pinned to a version, not `latest`, and you back up before every upgrade ([Upgrading](./upgrading.mdx)).
+- [ ] The image is pinned to a version, not `latest`, and you back up before every upgrade ([Upgrade](./upgrade.mdx)).

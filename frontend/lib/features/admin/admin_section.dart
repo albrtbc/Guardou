@@ -1,14 +1,13 @@
 import 'package:flutter/widgets.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:lucide_icons_flutter/lucide_icons_600.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../app/router/routes.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 enum AdminSection {
-  users(Routes.adminUsers, LucideIcons.users, LucideIcons600.users),
-  tasks(Routes.adminTasks, LucideIcons.listTodo, LucideIcons600.listTodo),
-  settings(Routes.adminSettings, LucideIcons.settings, LucideIcons600.settings);
+  users(Routes.adminUsers, FluentIcons.people_24_regular, FluentIcons.people_24_filled),
+  tasks(Routes.adminTasks, FluentIcons.task_list_ltr_24_regular, FluentIcons.task_list_ltr_24_filled),
+  settings(Routes.adminSettings, FluentIcons.settings_24_regular, FluentIcons.settings_24_filled);
 
   const AdminSection(this.path, this.icon, this.selectedIcon);
 

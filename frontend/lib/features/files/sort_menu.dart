@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import 'file_view_settings.dart';
@@ -13,7 +13,8 @@ String sortFieldLabel(SortField field, AppLocalizations l10n) => switch (field) 
   SortField.kind => l10n.columnKind,
 };
 
-IconData sortDirectionIcon({required bool ascending}) => ascending ? LucideIcons.arrowUp : LucideIcons.arrowDown;
+IconData sortDirectionIcon({required bool ascending}) =>
+    ascending ? FluentIcons.arrow_up_24_regular : FluentIcons.arrow_down_24_regular;
 
 class SortMenu extends ConsumerWidget {
   const SortMenu({super.key});

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../core/layout/window_size_class.dart';
 import '../../core/widgets/page_header.dart';
@@ -31,7 +31,11 @@ class SelectionToolbar extends StatelessWidget {
     return PageHeader(
       child: Row(
         children: [
-          IconButton(tooltip: l10n.clearSelection, onPressed: onClear, icon: const Icon(LucideIcons.x)),
+          IconButton(
+            tooltip: l10n.clearSelection,
+            onPressed: onClear,
+            icon: const Icon(FluentIcons.dismiss_24_regular),
+          ),
           const SizedBox(width: 8),
           Expanded(child: Text(l10n.selectedCount(count), overflow: TextOverflow.ellipsis)),
           for (final action in visible)
@@ -41,7 +45,7 @@ class SelectionToolbar extends StatelessWidget {
               builder: (anchor) => IconButton(
                 tooltip: l10n.moreActions,
                 onPressed: () => more(anchor),
-                icon: const Icon(LucideIcons.ellipsisVertical),
+                icon: const Icon(FluentIcons.more_vertical_24_regular),
               ),
             ),
         ],

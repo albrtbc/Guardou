@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/task_queue_summary.dart';
 import '../../api/generated/models/task_state.dart';
@@ -55,7 +55,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             child: switch (ref.watch(taskQueuesProvider)) {
               AsyncValue(:final value?) => _QueueList(queues: value),
               AsyncValue(error: _?) => FolderMessage(
-                icon: LucideIcons.serverCrash,
+                icon: FluentIcons.cloud_error_24_regular,
                 title: l10n.tasksLoadErrorTitle,
                 message: l10n.genericError,
                 action: FilledButton(onPressed: () => ref.invalidate(taskQueuesProvider), child: Text(l10n.errorRetry)),
@@ -260,7 +260,7 @@ class _QueueActions extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final buttons = [
       _ActionTile(
-        icon: LucideIcons.infinity,
+        icon: FluentIcons.arrow_repeat_all_24_regular,
         label: l10n.queueAll,
         onTap: () => unawaited(TaskActions(context).queueAll(queue.kind)),
       ),

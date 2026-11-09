@@ -22,7 +22,7 @@ public sealed class PreferencesTests : SignedInTests
     [Fact]
     public async Task KeepsTheChangedPreferencesForEachUser()
     {
-        UserPreferences changed = new(ThemePreference.Dark, Language.PtBr, UploadConflictPolicy.Rename);
+        UserPreferences changed = new(ThemePreference.Dark, Language.PtBr, StartPage.Suggested, UploadConflictPolicy.Rename);
 
         HttpResponseMessage response = await Client.PutAsJsonAsync(PreferencesPath, changed, HttpClientExtensions.JsonOptions, CancellationToken);
         using HttpClient bob = await SignInAsBobAsync();
@@ -36,17 +36,17 @@ public sealed class PreferencesTests : SignedInTests
     [Fact]
     public async Task WritesTheValuesAsText()
     {
-        await Client.PutAsJsonAsync(PreferencesPath, new UserPreferences(ThemePreference.Light, Language.PtBr, UploadConflictPolicy.Skip), HttpClientExtensions.JsonOptions, CancellationToken);
+        await Client.PutAsJsonAsync(PreferencesPath, new UserPreferences(ThemePreference.Light, Language.PtBr, StartPage.Starred, UploadConflictPolicy.Skip), HttpClientExtensions.JsonOptions, CancellationToken);
 
         string json = await Client.GetStringAsync(PreferencesPath, CancellationToken);
 
-        Assert.Equal("""{"theme":"light","language":"ptBr","uploadConflictPolicy":"skip"}""", json);
+        Assert.Equal("""{"theme":"light","language":"ptBr","startPage":"starred","uploadConflictPolicy":"skip"}""", json);
     }
 
     [Fact]
     public async Task RefusesAnUnknownValue()
     {
-        using StringContent body = new("""{"theme":"blue","language":"en","uploadConflictPolicy":"ask"}""", Encoding.UTF8, "application/json");
+        using StringContent body = new("""{"theme":"blue","language":"en","startPage":"files","uploadConflictPolicy":"ask"}""", Encoding.UTF8, "application/json");
 
         HttpResponseMessage response = await Client.PutAsync(PreferencesPath, body, CancellationToken);
 

@@ -16,6 +16,7 @@ import 'package:guardou/api/generated/models/item_permissions.dart';
 import 'package:guardou/api/generated/models/password_policy.dart';
 import 'package:guardou/api/generated/models/runtime_configuration.dart';
 import 'package:guardou/api/generated/models/storage_usage.dart';
+import 'package:guardou/api/generated/models/start_page.dart';
 import 'package:guardou/api/generated/models/theme_preference.dart';
 import 'package:guardou/api/generated/models/upload_conflict_policy.dart';
 import 'package:guardou/api/generated/models/user_preferences.dart';
@@ -103,6 +104,7 @@ const testUser = CurrentUser(
 const testPreferences = UserPreferences(
   theme: ThemePreference.system,
   language: Language.system,
+  startPage: StartPage.files,
   uploadConflictPolicy: UploadConflictPolicy.ask,
 );
 

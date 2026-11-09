@@ -1,11 +1,11 @@
 import 'package:flutter/widgets.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 
 enum ShareAccess {
-  restricted(LucideIcons.lock),
-  anyoneWithLink(LucideIcons.globe);
+  restricted(FluentIcons.lock_closed_24_regular),
+  anyoneWithLink(FluentIcons.globe_24_regular);
 
   const ShareAccess(this.icon);
 

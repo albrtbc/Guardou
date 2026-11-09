@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/task_entry.dart';
 import '../../api/generated/models/task_kind.dart';
@@ -28,9 +28,9 @@ String queueDescription(TaskKind kind, AppLocalizations l10n) => switch (kind) {
 };
 
 IconData queueIcon(TaskKind kind) => switch (kind) {
-  TaskKind.preview => LucideIcons.images,
-  TaskKind.searchIndex => LucideIcons.fileSearch,
-  TaskKind.$unknown => LucideIcons.listTodo,
+  TaskKind.preview => FluentIcons.image_multiple_24_regular,
+  TaskKind.searchIndex => FluentIcons.document_search_24_regular,
+  TaskKind.$unknown => FluentIcons.task_list_ltr_24_regular,
 };
 
 String taskPriorityLabel(TaskPriority priority, AppLocalizations l10n) => switch (priority) {

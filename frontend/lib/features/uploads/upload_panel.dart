@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../app/router/routes.dart';
 import '../../app/theme/app_tokens.dart';
@@ -142,10 +142,10 @@ class _Header extends StatelessWidget {
           ),
           IconButton(
             tooltip: expanded ? l10n.uploadPanelMinimize : l10n.uploadPanelExpand,
-            icon: Icon(expanded ? LucideIcons.chevronDown : LucideIcons.chevronUp),
+            icon: Icon(expanded ? FluentIcons.chevron_down_24_regular : FluentIcons.chevron_up_24_regular),
             onPressed: onToggle,
           ),
-          IconButton(tooltip: l10n.close, icon: const Icon(LucideIcons.x), onPressed: onClose),
+          IconButton(tooltip: l10n.close, icon: const Icon(FluentIcons.dismiss_24_regular), onPressed: onClose),
         ],
       ),
     );
@@ -237,7 +237,7 @@ class _UploadRowState extends ConsumerState<_UploadRow> {
     final item = widget.item;
     final cancel = IconButton(
       tooltip: l10n.cancel,
-      icon: const Icon(LucideIcons.x),
+      icon: const Icon(FluentIcons.dismiss_24_regular),
       onPressed: () => _queue.cancel(item.id),
     );
     return switch (item.status) {
@@ -245,7 +245,7 @@ class _UploadRowState extends ConsumerState<_UploadRow> {
       UploadStatus.uploading => [
         IconButton(
           tooltip: l10n.uploadPause,
-          icon: const Icon(LucideIcons.pause),
+          icon: const Icon(FluentIcons.pause_24_regular),
           onPressed: () => _queue.pause(item.id),
         ),
         cancel,
@@ -253,7 +253,7 @@ class _UploadRowState extends ConsumerState<_UploadRow> {
       UploadStatus.paused => [
         IconButton(
           tooltip: l10n.uploadResume,
-          icon: const Icon(LucideIcons.play),
+          icon: const Icon(FluentIcons.play_24_regular),
           onPressed: () => _queue.resume(item.id),
         ),
         cancel,
@@ -261,7 +261,7 @@ class _UploadRowState extends ConsumerState<_UploadRow> {
       UploadStatus.failed => [
         IconButton(
           tooltip: l10n.uploadRetry,
-          icon: const Icon(LucideIcons.rotateCw),
+          icon: const Icon(FluentIcons.arrow_clockwise_24_regular),
           onPressed: () => _queue.resume(item.id),
         ),
         cancel,
@@ -279,11 +279,14 @@ class _UploadRowState extends ConsumerState<_UploadRow> {
         width: _indicatorSize,
         height: _indicatorSize,
         decoration: BoxDecoration(color: tokens.success, shape: BoxShape.circle),
-        child: Icon(LucideIcons.check, size: _checkSize, color: tokens.onSuccess),
+        child: Icon(FluentIcons.checkmark_24_regular, size: _checkSize, color: tokens.onSuccess),
       ),
-      UploadStatus.failed => Icon(LucideIcons.circleAlert, size: _indicatorSize, color: colors.error),
-      UploadStatus.skipped ||
-      UploadStatus.cancelled => Icon(LucideIcons.circleMinus, size: _indicatorSize, color: colors.onSurfaceVariant),
+      UploadStatus.failed => Icon(FluentIcons.error_circle_24_regular, size: _indicatorSize, color: colors.error),
+      UploadStatus.skipped || UploadStatus.cancelled => Icon(
+        FluentIcons.subtract_circle_24_regular,
+        size: _indicatorSize,
+        color: colors.onSurfaceVariant,
+      ),
       UploadStatus.queued || UploadStatus.uploading || UploadStatus.paused => SizedBox.square(
         dimension: _indicatorSize,
         child: CircularProgressIndicator(
@@ -316,7 +319,7 @@ class _UploadRowState extends ConsumerState<_UploadRow> {
           child: Row(
             children: [
               entry == null
-                  ? Icon(LucideIcons.file, color: theme.colorScheme.onSurfaceVariant)
+                  ? Icon(FluentIcons.document_24_regular, color: theme.colorScheme.onSurfaceVariant)
                   : ItemTypeIcon(entry.type),
               SizedBox(width: spacing),
               Expanded(

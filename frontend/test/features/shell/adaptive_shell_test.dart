@@ -9,7 +9,7 @@ void main() {
     tester,
     size: size,
     overrides: serviceOverrides(auth: MockAuthService()),
-    child: const AdaptiveShell(location: '/home', child: SizedBox.shrink()),
+    child: const AdaptiveShell(location: '/suggested', child: SizedBox.shrink()),
   );
 
   testWidgets('compact portrait shows the bottom navigation and the New button', (tester) async {

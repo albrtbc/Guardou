@@ -1,0 +1,106 @@
+---
+sidebar_position: 2
+description: Single sign-on with an OpenID Connect provider
+---
+
+import ThemedImage from '@theme/ThemedImage';
+
+# Single Sign-On (OIDC)
+
+Guardou can sign users in with any OpenID Connect provider, such as Authentik, Keycloak, Authelia or Pocket ID.
+
+<ThemedImage
+  alt="Login page with single sign-on"
+  width="300"
+  sources={{
+    light: require('./img/oidc-login-light.png').default,
+    dark: require('./img/oidc-login-dark.png').default,
+  }}
+/>
+
+---
+
+## Requirements
+
+- The identity provider is available over HTTPS.
+- Guardou instance is available over HTTPS.
+
+---
+
+## Setup
+
+### Step 1 - Set the external URL
+
+Go to **Admin → Settings → Server** and set **External URL**.
+
+<ThemedImage
+  alt="External URL setting"
+  sources={{
+    light: require('./img/oidc-external-url-light.png').default,
+    dark: require('./img/oidc-external-url-dark.png').default,
+  }}
+/>
+
+### Step 2 - Create the client in the provider
+
+Create an OAuth2 / OpenID Connect application with these values:
+
+| Field                    | Value                                                        |
+| ------------------------ | ------------------------------------------------------------ |
+| Client type              | Confidential                                                 |
+| Use PKCE                 | True                                                         |
+| Redirect URI             | Available under **Admin → Settings → Single sign-on (OIDC)** |
+| Post-logout redirect URI | Available under **Admin → Settings → Single sign-on (OIDC)** |
+| Scopes                   | `openid profile email`                                       |
+
+### Step 3 - Configure Guardou
+
+Go to **Admin → Settings → Single sign-on (OIDC)**, fill in the fields and click **Save**. 
+
+| Field                             | Environment variable | Example                             |
+| --------------------------------- | -------------------- | ----------------------------------- |
+| `issuer_url`                      | `OIDC_ISSUER`        | `https://<IDENTITY_PROVIDER_URL>.com` |
+| `client_id`                       | `OIDC_CLIENT_ID`     |                                     |
+| `client_secret`                   | `OIDC_CLIENT_SECRET` |                                     |
+| `scopes`                          | `OIDC_SCOPES`        | `openid profile email`              |
+| `user_claim`                      | `OIDC_USER_CLAIM`    | `preferred_username`                |
+| Create users at the first sign-in |                      | On                                  |
+| Allow the password login          |                      | On                                  |
+
+:::tip
+
+You can also set the values in `.env`. 
+A field that is set by an environment variable is read-only in the admin panel.
+
+```bash
+OIDC_ISSUER=https://<IDENTITY_PROVIDER_URL>.com
+OIDC_CLIENT_ID=guardou
+OIDC_CLIENT_SECRET=example-secret
+```
+
+:::
+
+---
+
+## How users are matched
+
+At each sign-in, Guardou finds the user in this order:
+
+1. A user that is already linked to the account.
+2. A user with the same email, if the provider sends `email_verified: true`. Guardou links the two.
+3. A new user, if **Create users at the first sign-in** is on.
+
+To remove the link, go to **Admin → Users**, edit the user and click **Unlink**.
+
+When you sign out, Guardou also signs you out of the provider if the provider supports RP-initiated logout.
+
+:::warning[Take care]
+
+If the provider becomes unavailable, nobody can sign in. 
+To enable the password login again, inside the container execute the following command:
+
+```bash
+guardou auth enable-password-login
+```
+
+:::

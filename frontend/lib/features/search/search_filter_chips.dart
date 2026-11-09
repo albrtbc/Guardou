@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../../api/generated/models/item_type.dart';
@@ -72,7 +72,8 @@ class SearchFilterChips extends ConsumerWidget {
           ],
         ),
         FilterChip(
-          avatar: const Icon(LucideIcons.star, size: 16),
+          showCheckmark: false,
+          avatar: Icon(filters.starred ? FluentIcons.star_24_filled : FluentIcons.star_24_regular, size: 16),
           label: Text(l10n.navigationStarred),
           selected: filters.starred,
           onSelected: controller.setStarred,
@@ -98,7 +99,7 @@ class _MenuChip extends StatelessWidget {
         children: [
           Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 4),
-          const Icon(LucideIcons.chevronDown, size: 16),
+          const Icon(FluentIcons.chevron_down_24_regular, size: 16),
         ],
       ),
       selected: selected,

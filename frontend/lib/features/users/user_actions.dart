@@ -40,7 +40,7 @@ class UserActions {
     _show(_l10n.userSaved);
     if (saved.id == _container.read(sessionControllerProvider).value?.id) {
       if (!saved.isAdmin) {
-        _router.go(Routes.home);
+        _router.go(Routes.root);
       }
       await _container.read(sessionControllerProvider.notifier).refresh();
     }

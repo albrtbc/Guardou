@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/user_account.dart';
 import '../../api/generated/models/user_request.dart';
@@ -142,10 +142,14 @@ class _UserEditorDialogState extends ConsumerState<_UserEditorDialog> {
                 label: l10n.userType,
                 child: SegmentedButton<bool>(
                   segments: [
-                    ButtonSegment(value: false, icon: const Icon(LucideIcons.user), label: Text(l10n.userTypeUser)),
+                    ButtonSegment(
+                      value: false,
+                      icon: const Icon(FluentIcons.person_24_regular),
+                      label: Text(l10n.userTypeUser),
+                    ),
                     ButtonSegment(
                       value: true,
-                      icon: const Icon(LucideIcons.shieldCheck),
+                      icon: const Icon(FluentIcons.shield_checkmark_24_regular),
                       label: Text(l10n.accountAdministrator),
                     ),
                   ],
@@ -157,7 +161,7 @@ class _UserEditorDialogState extends ConsumerState<_UserEditorDialog> {
                 SizedBox(height: spacing),
                 Row(
                   children: [
-                    Icon(LucideIcons.link, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                    Icon(FluentIcons.link_24_regular, size: 18, color: theme.colorScheme.onSurfaceVariant),
                     const SizedBox(width: 8),
                     Expanded(child: Text(l10n.userOidcLinked, style: theme.textTheme.bodyMedium)),
                     TextButton(

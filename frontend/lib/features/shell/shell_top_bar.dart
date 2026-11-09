@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../app/theme/app_tokens.dart';
 import '../../core/layout/window_size_class.dart';
@@ -39,7 +39,7 @@ class ShellTopBar extends ConsumerWidget implements PreferredSizeWidget {
           ? Builder(
               builder: (context) => IconButton(
                 tooltip: l10n.navigationOpen,
-                icon: const Icon(LucideIcons.menu),
+                icon: const Icon(FluentIcons.navigation_24_regular),
                 onPressed: () => Scaffold.of(context).openDrawer(),
               ),
             )

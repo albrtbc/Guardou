@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_entry.dart';
 import '../../api/generated/models/trash_entry.dart';
@@ -20,14 +20,15 @@ import '../files/files_service.dart';
 import '../files/folder_states.dart';
 import '../files/item_actions_menu.dart';
 import '../files/item_interactions.dart';
+import '../files/item_marks.dart';
 import '../files/selection.dart';
 import '../files/selection_controller.dart';
 import '../files/selection_toolbar.dart';
 import 'trash_controller.dart';
 
 enum TrashAction {
-  restore(LucideIcons.rotateCcw),
-  deleteForever(LucideIcons.trash2);
+  restore(FluentIcons.arrow_counterclockwise_24_regular),
+  deleteForever(FluentIcons.delete_24_regular);
 
   const TrashAction(this.icon);
 
@@ -150,7 +151,7 @@ class _TrashPageState extends ConsumerState<TrashPage> {
             Expanded(child: Text(l10n.navigationTrash)),
             TextButton.icon(
               onPressed: entries.isEmpty ? null : () => unawaited(FileActions(context).emptyTrash()),
-              icon: const Icon(LucideIcons.trash2, size: 18),
+              icon: const Icon(FluentIcons.delete_24_regular, size: 18),
               label: Text(l10n.emptyTrash),
             ),
           ],
@@ -176,7 +177,11 @@ class _TrashPageState extends ConsumerState<TrashPage> {
     final l10n = AppLocalizations.of(context);
     final spacing = AppTokens.of(context).spacing;
     if (entries.isEmpty) {
-      return FolderMessage(icon: LucideIcons.trash, title: l10n.trashEmptyTitle, message: l10n.trashEmptyMessage);
+      return FolderMessage(
+        icon: FluentIcons.delete_24_regular,
+        title: l10n.trashEmptyTitle,
+        message: l10n.trashEmptyMessage,
+      );
     }
     final interactions = _interactions(selection, [for (final entry in entries) entry.entry.id]);
     return Column(
@@ -254,7 +259,7 @@ class _TrashRow extends StatelessWidget {
       interactions: interactions,
       child: ListTile(
         leading: ItemLeading(entry: item, interactions: interactions, size: 24),
-        title: Text(item.name, overflow: TextOverflow.ellipsis),
+        title: ItemName(entry: item),
         subtitle: Text(
           l10n.trashedSummary(formatDate(entry.trashed, l10n.localeName), formatDate(entry.expires, l10n.localeName)),
         ),

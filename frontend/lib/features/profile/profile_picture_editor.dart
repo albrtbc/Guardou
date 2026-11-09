@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/current_user.dart';
 import '../../core/browser/browser_files.dart';
@@ -65,11 +65,11 @@ class ProfilePictureEditor extends ConsumerWidget {
       items: [
         PopupMenuItem(
           onTap: () => unawaited(_replace(badgeContext, ref)),
-          child: MenuItemLabel(icon: LucideIcons.upload, label: l10n.profilePictureUpload),
+          child: MenuItemLabel(icon: FluentIcons.arrow_upload_24_regular, label: l10n.profilePictureUpload),
         ),
         PopupMenuItem(
           onTap: () => unawaited(_remove(badgeContext, ref)),
-          child: MenuItemLabel(icon: LucideIcons.trash2, label: l10n.profilePictureRemove),
+          child: MenuItemLabel(icon: FluentIcons.delete_24_regular, label: l10n.profilePictureRemove),
         ),
       ],
     );
@@ -135,7 +135,7 @@ class _EditBadge extends StatelessWidget {
               onTap: onPressed,
               child: SizedBox.square(
                 dimension: _size - _borderWidth * 2,
-                child: Icon(LucideIcons.pencil, size: _iconSize, color: colorScheme.onPrimary),
+                child: Icon(FluentIcons.edit_24_regular, size: _iconSize, color: colorScheme.onPrimary),
               ),
             ),
           ),

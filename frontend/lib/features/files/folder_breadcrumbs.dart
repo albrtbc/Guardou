@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/breadcrumb.dart';
 import '../../api/generated/models/item_details.dart';
@@ -106,12 +106,12 @@ class _CollapsedCrumbs extends StatelessWidget {
       builder: (context, menu, _) => IconButton(
         tooltip: AppLocalizations.of(context).moreFolders,
         onPressed: () => menu.isOpen ? menu.close() : menu.open(),
-        icon: const Icon(LucideIcons.ellipsis),
+        icon: const Icon(FluentIcons.more_horizontal_24_regular),
       ),
       menuChildren: [
         for (final crumb in crumbs)
           MenuItemButton(
-            leadingIcon: const Icon(LucideIcons.folder),
+            leadingIcon: const Icon(FluentIcons.folder_24_regular),
             onPressed: () => context.go(routeOf(crumb)),
             child: Text(breadcrumbLabel(crumb, AppLocalizations.of(context))),
           ),
@@ -127,7 +127,11 @@ class _Separator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Icon(LucideIcons.chevronRight, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      child: Icon(
+        FluentIcons.chevron_right_24_regular,
+        size: 18,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
     );
   }
 }

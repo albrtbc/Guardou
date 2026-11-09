@@ -1,8 +1,9 @@
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../api/generated/models/language.dart';
+import '../../api/generated/models/start_page.dart';
 import '../../api/generated/models/theme_preference.dart';
 import '../../api/generated/models/user_preferences.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -10,34 +11,35 @@ import '../settings/settings_section.dart';
 import 'preference_choices.dart';
 import 'preferences_section.dart';
 
-class AppearanceSection extends StatelessWidget {
-  const AppearanceSection({super.key});
+class GeneralSection extends StatelessWidget {
+  const GeneralSection({super.key});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return PreferencesSection(
-      icon: LucideIcons.palette,
-      title: l10n.appearanceSettings,
-      description: l10n.appearanceSettingsDescription,
-      builder: (preferences) => _AppearanceForm(preferences: preferences),
+      icon: FluentIcons.settings_24_regular,
+      title: l10n.generalSettings,
+      description: l10n.generalSettingsDescription,
+      builder: (preferences) => _GeneralForm(preferences: preferences),
     );
   }
 }
 
-class _AppearanceForm extends ConsumerStatefulWidget {
-  const _AppearanceForm({required this.preferences});
+class _GeneralForm extends ConsumerStatefulWidget {
+  const _GeneralForm({required this.preferences});
 
   final UserPreferences preferences;
 
   @override
-  ConsumerState<_AppearanceForm> createState() => _AppearanceFormState();
+  ConsumerState<_GeneralForm> createState() => _GeneralFormState();
 }
 
-class _AppearanceFormState extends ConsumerState<_AppearanceForm>
-    with SettingsForm<_AppearanceForm, UserPreferences>, PreferencesForm<_AppearanceForm> {
+class _GeneralFormState extends ConsumerState<_GeneralForm>
+    with SettingsForm<_GeneralForm, UserPreferences>, PreferencesForm<_GeneralForm> {
   late ThemePreference _theme;
   late Language _language;
+  late StartPage _startPage;
 
   @override
   UserPreferences get saved => widget.preferences;
@@ -52,10 +54,12 @@ class _AppearanceFormState extends ConsumerState<_AppearanceForm>
   void fill(UserPreferences value) {
     _theme = value.theme;
     _language = value.language;
+    _startPage = value.startPage;
   }
 
   @override
-  UserPreferences changed(UserPreferences current) => current.copyWith(theme: _theme, language: _language);
+  UserPreferences changed(UserPreferences current) =>
+      current.copyWith(theme: _theme, language: _language, startPage: _startPage);
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +83,13 @@ class _AppearanceFormState extends ConsumerState<_AppearanceForm>
             choices: Language.$valuesDefined,
             labelOf: (choice) => choice.label(l10n),
             onChanged: (choice) => setState(() => _language = choice),
+          ),
+          SettingsChoiceField(
+            label: l10n.startPage,
+            value: _startPage,
+            choices: StartPage.$valuesDefined,
+            labelOf: (choice) => choice.label(l10n),
+            onChanged: (choice) => setState(() => _startPage = choice),
           ),
           settingsActions(),
         ],

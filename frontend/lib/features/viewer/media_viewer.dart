@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_entry.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -63,7 +63,7 @@ class MediaViewer extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: _StepButton(
-                  icon: LucideIcons.chevronLeft,
+                  icon: FluentIcons.chevron_left_24_regular,
                   tooltip: l10n.viewerPrevious,
                   onPressed: () => show(previous),
                 ),
@@ -72,7 +72,7 @@ class MediaViewer extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: _StepButton(
-                  icon: LucideIcons.chevronRight,
+                  icon: FluentIcons.chevron_right_24_regular,
                   tooltip: l10n.viewerNext,
                   onPressed: () => show(next),
                 ),
@@ -93,7 +93,7 @@ class ViewerCloseButton extends StatelessWidget {
   Widget build(BuildContext context) => IconButton(
     tooltip: AppLocalizations.of(context).close,
     onPressed: () => context.go(location),
-    icon: const Icon(LucideIcons.x),
+    icon: const Icon(FluentIcons.dismiss_24_regular),
   );
 }
 

@@ -3,6 +3,8 @@ sidebar_position: 1
 description: Step-by-step guide on how to set up Guardou
 ---
 
+import ThemedImage from '@theme/ThemedImage';
+
 # Quick Start
 
 This is a quick install guide for Guardou.
@@ -33,7 +35,7 @@ The compose file uses the image `ghcr.io/albrtbc/guardou`, pinned to a version. 
 - The container runs with `no-new-privileges` and drops all Linux capabilities except `CHOWN`, `DAC_OVERRIDE`, `SETUID` and `SETGID`, which its entrypoint needs. Never add `DAC_READ_SEARCH`: it allows a known container escape.
 - It rotates its logs and gives the server 35 seconds to stop, so running tasks can finish.
 
-Keep the version tag. Don't switch to `latest`: the server migrates the database when it starts, and migrations can't be undone. See [Upgrading](../administration/upgrading.mdx).
+Keep the version tag. Don't switch to `latest`: the server migrates the database when it starts, and migrations can't be undone. See [Upgrade](../administration/upgrade.mdx).
 
 ### Step 2 - Populate custom values
 
@@ -72,7 +74,13 @@ Navigate to http://localhost:2286 and create the admin account.
 
 You should be redirected to the initial page.
 
-![Initial Page](./img/homescreen.jpg)
+<ThemedImage
+  alt="Initial page"
+  sources={{
+    light: require('./img/homescreen-light.webp').default,
+    dark: require('./img/homescreen-dark.webp').default,
+  }}
+/>
 
 Instead of the web page, you can create the admin from the command line. The command asks for the password, and also closes the registration:
 

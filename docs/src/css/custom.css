@@ -52,6 +52,16 @@
   color: #ffffff;
 }
 
+.markdown img {
+  display: block;
+  margin: 0 auto;
+}
+
+[data-theme='light'] .markdown img[class*='themedComponent--dark'],
+[data-theme='dark'] .markdown img[class*='themedComponent--light'] {
+  display: none;
+}
+
 [data-theme='dark'] .button--primary {
   color: #003354;
 }

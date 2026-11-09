@@ -4,6 +4,7 @@ import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import Layout from '@theme/Layout';
+import ThemedImage from '@theme/ThemedImage';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
 import Heading from '@theme/Heading';
 
@@ -25,11 +26,14 @@ function HomepageHeader() {
             Get Started
           </Link>
         </div>
-        <img
+        <ThemedImage
           className={styles.screenshot}
-          src={useBaseUrl('/img/screenshot.webp')}
-          width={1117}
-          height={720}
+          sources={{
+            light: useBaseUrl('/img/screenshot-light.webp'),
+            dark: useBaseUrl('/img/screenshot-dark.webp'),
+          }}
+          width={2234}
+          height={1416}
           alt="Guardou running on desktop and mobile"
         />
       </div>
