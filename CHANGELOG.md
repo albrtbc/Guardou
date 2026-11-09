@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/GuardouApp/Guardou/compare/v0.10.0...v0.11.0) (2026-11-09)
+
+
+### Features
+
+* add storage quotas ([#53](https://github.com/GuardouApp/Guardou/issues/53)) ([aa6fed7](https://github.com/GuardouApp/Guardou/commit/aa6fed7cda332ad61f70834e2058dd1a7cd510c8))
+
 ## [0.10.0](https://github.com/GuardouApp/Guardou/compare/v0.9.1...v0.10.0) (2026-11-05)
 
 
