@@ -38,4 +38,4 @@ If you decide to use it, follow the [3-2-1](https://www.backblaze.com/blog/the-3
 
 ## AI Usage
 
-This fork is developed with extensive AI assistance. Every change still has to meet the same bar before it is merged: tests, a green CI and a review. The rules are in [CONTRIBUTING.md](CONTRIBUTING.md).
+This fork is developed with extensive AI assistance. Every change still has to meet the same bar before it is merged: passing tests and a review. The rules are in [CONTRIBUTING.md](CONTRIBUTING.md).

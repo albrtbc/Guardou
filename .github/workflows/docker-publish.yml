@@ -1,20 +1,16 @@
-name: Docker publish
+name: Release
 
+# The fork's only workflow. Pushing a tag such as v0.10.0-fork.1 builds and scans the image,
+# pushes and signs it on GHCR, and creates the GitHub release with the compose files.
+# Builds and tests run locally before tagging.
 on:
   push:
     tags: ['v*.*.*']
-  # Called by release.yml, since its tags don't trigger the push event.
-  workflow_call:
-    inputs:
-      tag:
-        description: The release tag to publish, such as v1.2.3
-        required: true
-        type: string
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: albrtbc/guardou
-  TAG: ${{ inputs.tag || github.ref_name }}
+  TAG: ${{ github.ref_name }}
 
 jobs:
   # The scan runs with a read-only token and no registry credentials for pushing, apart from
@@ -104,6 +100,8 @@ jobs:
       contents: read
       packages: write
       id-token: write
+    outputs:
+      digest: ${{ steps.build-and-push.outputs.digest }}
 
     steps:
       - name: Checkout repository
@@ -157,3 +155,29 @@ jobs:
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes "{}@${DIGEST}"
+
+  # Not a prerelease: the docs link to releases/latest for the compose files.
+  github-release:
+    needs: [scan, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ needs.scan.outputs.sha }}
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DIGEST: ${{ needs.publish.outputs.digest }}
+        run: |
+          version="${TAG#v}"
+          notes=$(printf '%s\n\n%s\n\n%s\n' \
+            "Image: \`${REGISTRY}/${IMAGE_NAME}:${version}@${DIGEST}\`" \
+            "Signed with cosign (keyless, this workflow). Read docs/docs/administration/upgrading.mdx before upgrading." \
+            "Attached: the hardened docker-compose.yaml and example.env.")
+          gh release create "$TAG" docker/docker-compose.yaml docker/example.env \
+            --verify-tag --title "$TAG" --notes "$notes" --generate-notes
