@@ -22,7 +22,7 @@ const config: Config = {
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'GuardouApp', // Usually your GitHub org/user name.
+  organizationName: 'albrtbc', // Usually your GitHub org/user name.
   projectName: 'Guardou', // Usually your repo name.
 
   onBrokenLinks: 'throw',
@@ -63,7 +63,7 @@ const config: Config = {
       },
       items: [
         {
-          href: 'https://github.com/GuardouApp/Guardou',
+          href: 'https://github.com/albrtbc/Guardou',
           label: 'GitHub',
           position: 'right',
         },

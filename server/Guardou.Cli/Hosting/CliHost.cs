@@ -1,9 +1,11 @@
 using System.CommandLine;
 using Guardou.Application;
+using Guardou.Application.Audit;
 using Guardou.Application.Persistence;
 using Guardou.Application.Users;
 using Guardou.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace Guardou.Cli.Hosting;
@@ -47,6 +49,7 @@ internal static class CliHost
         });
         builder.Services.AddApplication();
         builder.Services.AddInfrastructure();
+        builder.Services.Replace(ServiceDescriptor.Singleton<IAuditContext, CliAuditContext>());
         return builder.Build();
     }
 }

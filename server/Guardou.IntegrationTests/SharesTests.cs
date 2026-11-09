@@ -243,8 +243,79 @@ public sealed class SharesTests : SignedInTests
         HttpResponseMessage picture = await anonymous.GetAsync($"/api/shares/{token}/items/{file.Id}/creator/picture", CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
-        Assert.Equal(new ItemCreator(admin.Id, TestServerFactory.AdminDisplayName, HasPicture: true), shared?.Creator);
+        Assert.Equal(new ItemCreator(Id: null, TestServerFactory.AdminDisplayName, HasPicture: true), shared?.Creator);
         Assert.Equal("image/webp", picture.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task HidesTheCreatorIdFromAnonymousVisitors()
+    {
+        ItemEntry docs = await Client.CreateFolderEntryAsync(ItemsApi.Root, "docs");
+        await Client.UploadEntryAsync(docs.Id, "a.txt", "a");
+        string token = TokenOf(await ShareAsync(docs.Id));
+        using HttpClient anonymous = Factory.CreateClient();
+
+        ItemDetails folder = await GetSharedDetailsAsync(anonymous, token, docs.Id);
+        string json = await anonymous.GetStringAsync($"/api/shares/{token}/items/{docs.Id}", CancellationToken);
+
+        Assert.Null(folder.Entry.Creator.Id);
+        Assert.NotEmpty(folder.Items ?? []);
+        Assert.All(folder.Items ?? [], entry => Assert.Null(entry.Creator.Id));
+        Assert.Equal(TestServerFactory.AdminDisplayName, folder.Entry.Creator.DisplayName);
+        Assert.DoesNotContain((await Client.FindUserAsync(TestServerFactory.AdminUsername)).Id, json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task DoesNotCacheSharedFilesAndFolderArchives()
+    {
+        ItemEntry docs = await Client.CreateFolderEntryAsync(ItemsApi.Root, "docs");
+        ItemEntry file = await Client.UploadEntryAsync(docs.Id, "a.txt", "a");
+        string token = TokenOf(await ShareAsync(docs.Id));
+        using HttpClient anonymous = Factory.CreateClient();
+
+        HttpResponseMessage view = await anonymous.GetAsync($"/api/shares/{token}/items/{file.Id}/view", CancellationToken);
+        HttpResponseMessage download = await anonymous.GetAsync($"/api/shares/{token}/items/{file.Id}/download", CancellationToken);
+        HttpResponseMessage archive = await anonymous.GetAsync($"/api/shares/{token}/items/{docs.Id}/download", CancellationToken);
+
+        AssertNoStore(view);
+        AssertNoStore(download);
+        AssertNoStore(archive);
+        Assert.Equal("application/zip", archive.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task CachesSharedPreviewsForFiveMinutes()
+    {
+        ItemEntry image = await Client.UploadImageAsync("wide.png");
+        await Client.WaitForPreviewAsync(image.Id);
+        string token = TokenOf(await ShareAsync(image.Id));
+        using HttpClient anonymous = Factory.CreateClient();
+
+        HttpResponseMessage preview = await anonymous.GetAsync($"/api/shares/{token}/items/{image.Id}/preview?size=thumbnail", CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        Assert.True(preview.Headers.CacheControl?.Private);
+        Assert.Equal(TimeSpan.FromMinutes(5), preview.Headers.CacheControl?.MaxAge);
+        Assert.DoesNotContain("immutable", preview.Headers.CacheControl?.Extensions.Select(extension => extension.Name) ?? []);
+    }
+
+    [Fact]
+    public async Task RefusesItemsOutsideTheShareOnViewPreviewAndArchive()
+    {
+        ItemEntry docs = await Client.CreateFolderEntryAsync(ItemsApi.Root, "docs");
+        ItemEntry secretFolder = await Client.CreateFolderEntryAsync(ItemsApi.Root, "secret");
+        ItemEntry secretImage = await Client.UploadImageAsync("secret.png");
+        await Client.WaitForPreviewAsync(secretImage.Id);
+        string token = TokenOf(await ShareAsync(docs.Id));
+        using HttpClient anonymous = Factory.CreateClient();
+
+        HttpResponseMessage view = await anonymous.GetAsync($"/api/shares/{token}/items/{secretImage.Id}/view", CancellationToken);
+        HttpResponseMessage preview = await anonymous.GetAsync($"/api/shares/{token}/items/{secretImage.Id}/preview?size=thumbnail", CancellationToken);
+        HttpResponseMessage archive = await anonymous.GetAsync($"/api/shares/{token}/items/{secretFolder.Id}/download", CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, view.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, preview.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, archive.StatusCode);
     }
 
     [Fact]
@@ -259,6 +330,12 @@ public sealed class SharesTests : SignedInTests
         HttpResponseMessage response = await Factory.CreateClient().GetAsync($"/api/shares/{token}/items/{other.Id}/creator/picture", CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    private static void AssertNoStore(HttpResponseMessage response)
+    {
+        Assert.True(response.Headers.CacheControl?.Private);
+        Assert.True(response.Headers.CacheControl?.NoStore);
     }
 
     private static string TokenOf(ShareLink link)

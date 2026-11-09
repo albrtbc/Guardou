@@ -185,4 +185,65 @@ void main() {
     expect(item(container).status, UploadStatus.failed);
     expect(item(container).failure, UploadFailure.quotaExceeded);
   });
+
+  Future<UploadFailure?> failureOfStart(ApiProblem problem) async {
+    when(
+      () => service.start(any(), any(), any()),
+    ).thenThrow(DioException(requestOptions: RequestOptions(), error: problem));
+    final container = await queue();
+
+    container.read(uploadQueueProvider.notifier).enqueue('root', [file('a.bin', 10)]);
+    await pumpEventQueue();
+
+    expect(item(container).status, UploadStatus.failed);
+    return item(container).failure;
+  }
+
+  test('shows a file above the maximum size as a failure', () async {
+    final failure = await failureOfStart(const ApiProblem(status: 413, codes: [ApiProblem.fileTooLargeCode]));
+
+    expect(failure, UploadFailure.fileTooLarge);
+  });
+
+  test('shows a full server as a failure', () async {
+    final failure = await failureOfStart(const ApiProblem(status: 507, codes: [ApiProblem.storageFullCode]));
+
+    expect(failure, UploadFailure.storageFull);
+  });
+
+  test('shows a server that fills up during a write as a failure', () async {
+    stubAppend((_) async => throw DioException(requestOptions: RequestOptions(), error: const ApiProblem(status: 507)));
+    final container = await queue();
+
+    container.read(uploadQueueProvider.notifier).enqueue('root', [file('a.bin', 10)]);
+    await pumpEventQueue();
+
+    expect(item(container).failure, UploadFailure.storageFull);
+  });
+
+  test('cancels the server session of a failed upload when the finished rows are cleared', () async {
+    stubAppend((_) async => throw DioException(requestOptions: RequestOptions(), error: const ApiProblem(status: 507)));
+    final container = await queue();
+    final notifier = container.read(uploadQueueProvider.notifier)..enqueue('root', [file('a.bin', 10)]);
+    await pumpEventQueue();
+    verifyNever(() => service.cancel(any()));
+
+    notifier.clear();
+    await pumpEventQueue();
+
+    verify(() => service.cancel('session')).called(1);
+    expect(container.read(uploadQueueProvider).items, isEmpty);
+  });
+
+  test('shows too many uploads in progress as a failure', () async {
+    final failure = await failureOfStart(const ApiProblem(status: 429, codes: [ApiProblem.tooManyUploadsCode]));
+
+    expect(failure, UploadFailure.tooManyUploads);
+  });
+
+  test('does not take a rate limit for too many uploads', () async {
+    final failure = await failureOfStart(const ApiProblem(status: 429));
+
+    expect(failure, UploadFailure.other);
+  });
 }

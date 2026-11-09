@@ -10,5 +10,6 @@ internal static class Policies
     public static void Add(AuthorizationBuilder authorization)
     {
         authorization.AddPolicy(Admin, policy => policy.RequireAuthenticatedUser().RequireRole(Roles.Admin));
+        authorization.SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
     }
 }

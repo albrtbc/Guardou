@@ -2,6 +2,8 @@ using Guardou.Application.Authentication;
 using Guardou.Application.Settings;
 using Guardou.Domain.Authentication;
 using Guardou.Domain.Settings;
+using Guardou.UnitTests.Audit;
+using Guardou.UnitTests.Files;
 using Guardou.UnitTests.Settings;
 
 namespace Guardou.UnitTests.Authentication;
@@ -11,6 +13,7 @@ public sealed class OidcSettingsAdministrationTests : IOidcSettingsObserver
     private const string RequestOrigin = "http://localhost:8080";
 
     private readonly FakeSettingsStore _store = new();
+    private readonly TestAudit _audit = new();
     private OidcSettings? _observed;
 
     private static CancellationToken CancellationToken => TestContext.Current.CancellationToken;
@@ -41,6 +44,18 @@ public sealed class OidcSettingsAdministrationTests : IOidcSettingsObserver
         Assert.True(view.ClientSecretSet);
         Assert.Equal("http://localhost:8080/api/auth/oidc/callback", view.RedirectUri);
         Assert.Equal("http://localhost:8080/login", view.PostLogoutRedirectUri);
+    }
+
+    [Fact]
+    public async Task LogsTheSectionAndNeverTheSecret()
+    {
+        await Administration().ChangeAsync(Change, RequestOrigin, CancellationToken);
+
+        LogRecord record = Assert.Single(_audit.Logger.Records);
+        Assert.Equal(9020, record.EventId.Id);
+        Assert.Equal("oidc", record.Properties["Section"]);
+        Assert.DoesNotContain("secret", record.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(record.Properties.Values, value => value?.ToString()?.Contains("id.example.com", StringComparison.Ordinal) == true);
     }
 
     [Fact]
@@ -137,7 +152,8 @@ public sealed class OidcSettingsAdministrationTests : IOidcSettingsObserver
     {
         return new OidcSettingsAdministration(
             TestSettings.Oidc(_store, overrides),
-            new ServerSettingsAdministration(TestSettings.Server(_store, overrides)),
-            this);
+            new ServerSettingsAdministration(TestSettings.Server(_store, overrides), _audit.Log),
+            this,
+            _audit.Log);
     }
 }

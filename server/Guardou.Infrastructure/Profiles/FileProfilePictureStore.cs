@@ -17,6 +17,9 @@ internal sealed partial class FileProfilePictureStore(
     private const string PartialSuffix = ".part";
     private const int Edge = 256;
     private const int Quality = 80;
+    private const int MaximumConcurrentEncodings = 2;
+
+    private static readonly SemaphoreSlim Encodings = new(MaximumConcurrentEncodings);
 
     static FileProfilePictureStore()
     {
@@ -50,7 +53,7 @@ internal sealed partial class FileProfilePictureStore(
     {
         try
         {
-            byte[] picture = Encode(await downloader.DownloadAsync(source, cancellationToken));
+            byte[] picture = await EncodeAsync(await downloader.DownloadAsync(source, cancellationToken), cancellationToken);
             await WriteAsync(userId, picture, cancellationToken);
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidDataException or VipsException)
@@ -64,9 +67,15 @@ internal sealed partial class FileProfilePictureStore(
         byte[] picture;
         try
         {
-            picture = Encode(await BoundedStreamReader.ReadAsync(content, ProfilePictureLimits.MaximumBytes, cancellationToken));
+            picture = await EncodeAsync(
+                await BoundedStreamReader.ReadAsync(content, ProfilePictureLimits.MaximumBytes, cancellationToken),
+                cancellationToken);
         }
-        catch (Exception exception) when (exception is InvalidDataException or VipsException)
+        catch (InvalidDataException exception)
+        {
+            throw new InvalidProfilePictureException(exception.Message, exception);
+        }
+        catch (VipsException exception)
         {
             throw new InvalidProfilePictureException("The picture is not a supported image or is too large.", exception);
         }
@@ -83,8 +92,26 @@ internal sealed partial class FileProfilePictureStore(
         }
     }
 
+    private static async Task<byte[]> EncodeAsync(byte[] source, CancellationToken cancellationToken)
+    {
+        await Encodings.WaitAsync(cancellationToken);
+        try
+        {
+            return Encode(source);
+        }
+        finally
+        {
+            Encodings.Release();
+        }
+    }
+
     private static byte[] Encode(byte[] source)
     {
+        using (Image header = Image.NewFromBuffer(source, access: Enums.Access.Sequential))
+        {
+            ImageGuard.CheckPixels(header);
+        }
+
         using Image thumbnail = Image.ThumbnailBuffer(source, Edge, height: Edge, size: Enums.Size.Down, crop: Enums.Interesting.Centre);
         return thumbnail.WebpsaveBuffer(q: Quality, keep: Enums.ForeignKeep.None);
     }

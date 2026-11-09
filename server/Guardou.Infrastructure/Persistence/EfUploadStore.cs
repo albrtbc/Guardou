@@ -22,6 +22,16 @@ internal sealed class EfUploadStore(AppDbContext context) : IUploadStore
             .ToListAsync(cancellationToken);
     }
 
+    public Task<int> CountActiveOfOwnerAsync(string ownerId, DateTimeOffset since, CancellationToken cancellationToken)
+    {
+        return Uploads.CountAsync(upload => upload.OwnerId == ownerId && upload.LastWrite > since, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<UploadSize>> SizesAsync(CancellationToken cancellationToken)
+    {
+        return await Uploads.Select(upload => new UploadSize(upload.Id, upload.Size)).ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Upload>> LastWrittenBeforeAsync(DateTimeOffset time, CancellationToken cancellationToken)
     {
         return await Uploads.Where(upload => upload.LastWrite <= time).ToListAsync(cancellationToken);

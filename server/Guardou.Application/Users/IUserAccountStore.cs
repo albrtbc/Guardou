@@ -20,7 +20,7 @@ public interface IUserAccountStore
 
     Task<UserAccountResult> AddLoginAsync(string id, string provider, string key);
 
-    Task RemoveLoginAsync(string id, string provider);
+    Task<bool> RemoveLoginAsync(string id, string provider);
 
     Task<UserAccountResult> UpdateAsync(string id, UserProfile profile, string? password);
 

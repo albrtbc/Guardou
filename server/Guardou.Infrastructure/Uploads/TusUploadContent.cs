@@ -15,6 +15,19 @@ internal sealed class TusUploadContent(TusDiskStore store, StoragePaths paths, L
         return id;
     }
 
+    public async Task<long> WrittenBytesAsync(string id, CancellationToken cancellationToken)
+    {
+        // Completing, cancelling or expiring an upload can remove its file between the check and the read.
+        try
+        {
+            return await store.FileExistAsync(id, cancellationToken) ? await store.GetUploadOffsetAsync(id, cancellationToken) : 0;
+        }
+        catch (FileNotFoundException)
+        {
+            return 0;
+        }
+    }
+
     public async Task<bool> IsCompleteAsync(string id, CancellationToken cancellationToken)
     {
         return await store.FileExistAsync(id, cancellationToken)

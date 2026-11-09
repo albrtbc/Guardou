@@ -20,6 +20,12 @@ internal static class PreviewsApi
         return image.WriteToBuffer(".png");
     }
 
+    public static byte[] LargePng(int width, int height)
+    {
+        using Image image = Image.Black(width, height);
+        return image.WriteToBuffer(".png", new VOption { { "compression", 1 } });
+    }
+
     public static async Task<ItemEntry> UploadImageAsync(this HttpClient client, string fileName)
     {
         return await ItemsApi.ReadEntryAsync(await client.UploadBytesAsync(ItemsApi.Root, fileName, Png(800, 400)));

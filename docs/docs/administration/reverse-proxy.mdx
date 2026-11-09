@@ -1,0 +1,258 @@
+---
+sidebar_position: 3
+description: Run Guardou behind a reverse proxy and expose only share links
+---
+
+# Reverse Proxy
+
+Guardou serves plain HTTP on port 2286. For anything beyond one machine, put a reverse proxy in front of it. The proxy terminates TLS and applies the limits that the app leaves to the edge.
+
+Caddy, Cloudflare and nginx are used as examples. Any proxy that can do the same works.
+
+---
+
+## Bind the app port to localhost
+
+Publish the port on the loopback interface only, as the [`docker-compose.yaml`](https://github.com/albrtbc/Guardou/blob/main/docker/docker-compose.yaml) example does:
+
+```yaml
+ports:
+  - "127.0.0.1:2286:2286"
+```
+
+A bare `2286:2286` listens on every interface. Docker writes its own firewall rules, which come before the ones of `ufw` or `firewalld`, so a published port stays reachable even when the host firewall denies it. Anyone who can reach the port skips the proxy, together with its TLS, its allowlist and its limits.
+
+If the proxy runs as a container on the same Docker network, you can drop `ports` and have it connect to `guardou:2286`.
+
+---
+
+## TLS and HSTS
+
+Terminate TLS at the proxy. Caddy gets and renews certificates by itself.
+
+Guardou sends a `Strict-Transport-Security` header with a 30-day `max-age` on requests it sees as HTTPS, which requires `TRUSTED_PROXIES` (below). Once HTTPS works for good, set the `max-age` you want at the proxy. Make sure only one `Strict-Transport-Security` header reaches the browser (in nginx, add `proxy_hide_header Strict-Transport-Security`).
+
+---
+
+## Tell Guardou about the proxy
+
+Set these in your `.env` file:
+
+```bash
+EXTERNAL_URL=https://guardou.example.com
+AllowedHosts=guardou.example.com;localhost;127.0.0.1
+TRUSTED_PROXIES=172.18.0.1
+```
+
+### `EXTERNAL_URL`
+
+The public address of the server. Guardou builds share links and the OIDC redirect addresses from it. When it is empty, Guardou uses the address of each request. If you [expose only share links](#expose-only-share-links), it must be the address of the share host.
+
+### `AllowedHosts`
+
+A list of host names, separated by `;`. Guardou answers `400` to any request whose `Host` header is not in the list. The default is `*`, which accepts every host.
+
+Keep `127.0.0.1` in the list, because the container's health check calls `http://127.0.0.1:2286/health` and the container is reported unhealthy without it. Keep `localhost` too, so that `http://localhost:2286` still works, for example through the SSH tunnel in the [Quick Start](../overview/quick-start.mdx).
+
+Every host name people use to reach Guardou must be in the list, including a private one that you use next to a public share host.
+
+### `TRUSTED_PROXIES`
+
+A comma-separated list of the IP addresses or CIDR ranges of the proxies that connect to Guardou, for example `172.18.0.1,10.0.0.0/24`.
+
+- Without it, Guardou ignores `X-Forwarded-For` and `X-Forwarded-Proto` (apart from loopback addresses). Session cookies are then not marked `Secure` behind TLS, and every visitor shares one rate limit, because Guardou only sees the proxy's address.
+- List only the **direct** proxies, the ones whose address Guardou sees on the connection. Don't list a whole network that also holds other containers: anything in the list can claim to be any client.
+- Guardou reads one hop of forwarding (`ForwardLimit = 1`): the last `X-Forwarded-For` entry, written by your proxy.
+- Entries must be valid IP addresses or CIDR ranges, with all four parts for IPv4 (`172.18.0.1`, not `172.18`). Guardou refuses to start if one is not, instead of trusting the wrong host.
+
+**Proxy on the same host.** The container sees a connection from the gateway of its Docker network, not from `127.0.0.1`. Find it and put it in `TRUSTED_PROXIES`:
+
+```bash
+docker network inspect guardou_default --format '{{ (index .IPAM.Config 0).Gateway }}'
+```
+
+The command prints an address such as `172.18.0.1`. Check it again if you remove and recreate the network.
+
+**Proxy as a container.** Use the address of the proxy container on the shared network. Give it a fixed address, or a small range that holds only the proxy.
+
+### Behind a tunnel or a CDN
+
+Guardou trusts only its own proxy, so the proxy has to work out the real client itself and pass it on. If it forwards whatever it received, Guardou records the address of the tunnel.
+
+With Caddy behind Cloudflare Tunnel, trust the tunnel daemon, read the client from `Cf-Connecting-Ip`, and write it into `X-Forwarded-For`:
+
+```caddyfile
+{
+	servers {
+		# The tunnel daemon connects from a private address. List its exact address if you know it.
+		trusted_proxies static private_ranges
+		client_ip_headers Cf-Connecting-Ip
+	}
+}
+
+guardou.example.com {
+	reverse_proxy 127.0.0.1:2286 {
+		header_up X-Forwarded-For {client_ip}
+	}
+}
+```
+
+The `header_up` line matters. By default Caddy appends the address of its own peer, the tunnel daemon, to `X-Forwarded-For`, and Guardou would take that as the client.
+
+`private_ranges` fits a tunnel only, because the daemon connects from a private address. If you use Cloudflare's proxy without a tunnel, Cloudflare connects to Caddy from the public addresses it publishes. Replace `private_ranges` with [Cloudflare's IP ranges](https://www.cloudflare.com/ips/) and keep the rest.
+
+---
+
+## Expose only share links
+
+If the instance is private (a LAN or a VPN) and you only want to publish share links, expose a separate public host name that allows share traffic and denies everything else. Keep using the full app through a private address.
+
+The public host serves the share page, its files and nothing more. Signing in and adding a share to *Shared with me* don't work there, by design.
+
+### Settings for a share host
+
+Guardou builds share links from `EXTERNAL_URL`, and answers `400` to hosts that `AllowedHosts` doesn't list. With a public share host and a private host, set:
+
+```bash
+# The share host: share links are built from it.
+EXTERNAL_URL=https://share.example.com
+# Both hosts, plus the ones for the health check and for localhost.
+AllowedHosts=share.example.com;guardou.internal.example.com;localhost;127.0.0.1
+```
+
+`EXTERNAL_URL` must be the share host, or the links you copy would point to the private host. The OIDC redirects use it too, so OIDC sign-in doesn't work on the private host. Use password sign-in there.
+
+### The rules
+
+Allow `GET` and `HEAD` requests whose path matches one of these patterns, and deny everything else, including `/`, `/login`, `/api/auth/*`, `/api/shares/*/join`, `/health` and `/signout-oidc`:
+
+```
+^/s/[A-Za-z0-9_-]{22}(/(folders|view)/[A-Za-z0-9_-]{22})?/?$
+^/(flutter_bootstrap\.js|main\.dart\.js|favicon\.png|manifest\.json)$
+^/(canvaskit|assets|icons)/
+^/api/shares/[A-Za-z0-9_-]{22}$
+^/api/shares/[A-Za-z0-9_-]{22}/items/[A-Za-z0-9_-]{22}(/(download|view|preview|creator/picture))?$
+```
+
+Three details matter:
+
+- **Deny by default.** List what is allowed, not what is blocked. A blocklist misses routes added in a later release.
+- **Match case-insensitively.** Guardou matches routes without regard to case, so `/API/AUTH/LOGIN` reaches the same handler as `/api/auth/login`. A case-sensitive deny rule is bypassed by changing a letter.
+- **Answer `/api/auth/me` with 401.** The app calls it on load to learn who is signed in. Guardou answers `401` to an anonymous request. A blocked path usually answers `404`, which is harmless, but `401` keeps the browser's network tab free of failed requests. The Caddy example does this.
+
+Let `Range` and `If-Range` headers through unchanged. Video playback and resumed downloads depend on them.
+
+Some refusals are expected. The app requests `GET /api/config` on every load, and the allowlist denies it. The share page still works, and only the browser tab title stays empty. Don't add `/api/config` to the allowlist. Where `/api/auth/me` is refused rather than answered with `401`, it is the same kind of refusal.
+
+### Caddy
+
+Caddy's `path` matcher ignores case, but `path_regexp` does not, so each pattern starts with `(?i)`:
+
+```caddyfile
+share.example.com {
+	route {
+		@notRead not method GET HEAD
+		respond @notRead 405
+
+		respond /api/auth/me 401
+
+		@denied {
+			not path_regexp (?i)^/s/[A-Za-z0-9_-]{22}(/(folders|view)/[A-Za-z0-9_-]{22})?/?$
+			not path_regexp (?i)^/(flutter_bootstrap\.js|main\.dart\.js|favicon\.png|manifest\.json)$
+			not path_regexp (?i)^/(canvaskit|assets|icons)/
+			not path_regexp (?i)^/api/shares/[A-Za-z0-9_-]{22}$
+			not path_regexp (?i)^/api/shares/[A-Za-z0-9_-]{22}/items/[A-Za-z0-9_-]{22}(/(download|view|preview|creator/picture))?$
+		}
+		respond @denied 404
+
+		reverse_proxy 127.0.0.1:2286
+	}
+}
+```
+
+`route` keeps the directives in the order written. If a tunnel or CDN sits in front of Caddy, add the settings from [Behind a tunnel or a CDN](#behind-a-tunnel-or-a-cdn).
+
+### Cloudflare WAF
+
+`http.request.uri.path` is case-sensitive, so compare `lower(http.request.uri.path)`. Create a custom rule that blocks requests matching this expression. The `matches` operator needs a Cloudflare Business or Enterprise plan. Keep URL normalization on, so that Cloudflare sees the same path as Guardou:
+
+```
+not (
+  http.request.method in {"GET" "HEAD"}
+  and (
+    lower(http.request.uri.path) matches r"^/s/[a-z0-9_-]{22}(/(folders|view)/[a-z0-9_-]{22})?/?$"
+    or lower(http.request.uri.path) matches r"^/(flutter_bootstrap\.js|main\.dart\.js|favicon\.png|manifest\.json)$"
+    or lower(http.request.uri.path) matches r"^/(canvaskit|assets|icons)/"
+    or lower(http.request.uri.path) matches r"^/api/shares/[a-z0-9_-]{22}$"
+    or lower(http.request.uri.path) matches r"^/api/shares/[a-z0-9_-]{22}/items/[a-z0-9_-]{22}(/(download|view|preview|creator/picture))?$"
+  )
+)
+```
+
+This rule refuses `/api/auth/me` and `/api/config` like any other denied path, which is expected and harmless. To answer `/api/auth/me` with `401` and keep the network tab clean, add a rule before this one for `lower(http.request.uri.path) eq "/api/auth/me"`, with a custom block response of status `401`. Custom block responses (status 400 to 499) need a Pro plan or above.
+
+### nginx
+
+A sketch, not tested here. `location ~*` matches case-insensitively, `limit_except GET` allows `GET` and `HEAD` only, and the regular expression is in quotes because it contains braces:
+
+```nginx
+server {
+	server_name share.example.com;
+	# listen 443 ssl; ssl_certificate ...
+
+	location = /api/auth/me { return 401; }
+
+	location ~* "^(/s/[A-Za-z0-9_-]{22}(/(folders|view)/[A-Za-z0-9_-]{22})?/?|/(flutter_bootstrap\.js|main\.dart\.js|favicon\.png|manifest\.json)|/(canvaskit|assets|icons)/.*|/api/shares/[A-Za-z0-9_-]{22}|/api/shares/[A-Za-z0-9_-]{22}/items/[A-Za-z0-9_-]{22}(/(download|view|preview|creator/picture))?)$" {
+		limit_except GET { deny all; }
+		proxy_pass http://127.0.0.1:2286;
+		proxy_set_header Host $host;
+		proxy_set_header X-Forwarded-For $remote_addr;
+		proxy_set_header X-Forwarded-Proto $scheme;
+	}
+
+	location / { return 404; }
+}
+```
+
+### Check the static files
+
+The list of static files comes from the Flutter build, and it can change between versions. After setting up the rules, and after each upgrade, open a share link with the browser's network tab open. Apart from the expected refusals above, no request should be refused. If one is a static file the page needs, add it to the second pattern.
+
+Guardou protects its own routes with a fallback authorization policy. A side effect: an anonymous request for a static file that doesn't exist answers `401`, not `404`.
+
+---
+
+## What Guardou enforces itself
+
+Don't repeat these at the proxy, unless you want a stricter limit.
+
+- **Rate limits** per client IP (IPv6 clients are grouped by /64). Over the limit, the answer is `429` with `Retry-After`.
+  - Login, registration and OIDC sign-in: 10 requests per minute.
+  - Share links (`/api/shares/{token}` and item details): a burst of 120, refilled at 60 per minute.
+  - Share previews and creator pictures: a burst of 600, refilled at 300 per minute.
+- **Account lockout.** Five failed password sign-ins lock the account for 15 minutes.
+- **Security headers.** `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, a `Content-Security-Policy` on the app's pages, and `X-Frame-Options`.
+- **Upload and archive limits.** See `MAX_FILE_SIZE_MB` and `MIN_FREE_SPACE_MB` in [Environment Variables](./environment-variables.mdx). Zip downloads are capped in size, in entries and in concurrent requests.
+- **Audit log.** Sign-ins (successes, failures and lockouts), user and settings changes, share links, and share access go to the console under the `Guardou.Audit` category, with the client IP. It stays at `Information` even if you raise `Logging__LogLevel__Default`. Set `Logging__Console__FormatterName=json` for structured logs. Share previews and creator pictures (event 9041) appear only at `Debug`: set `Logging__LogLevel__Guardou.Audit=Debug`. Passwords, tokens and setting values are never logged, and share tokens are masked in error logs. Don't turn on `Microsoft.AspNetCore` request logging or `Logging__Console__FormatterOptions__IncludeScopes`: both write share tokens in paths. User changes made with the `guardou` CLI are logged with the actor `cli`. Under Docker those lines go to the output of the `docker exec` process, not to `docker logs`.
+
+## What belongs at the proxy
+
+- **TLS and HSTS**, as above.
+- **Per-IP bandwidth and connection limits on `/download` and `/view`.** Guardou doesn't rate-limit them, so video `Range` requests keep working, and they are the routes that move the most data. Caddy needs a plugin for this, nginx has `limit_conn` and `limit_rate`, and Cloudflare has rate limiting rules.
+- **The share-only allowlist**, if you use one.
+
+---
+
+## Production checklist
+
+- [ ] The admin account exists before the app is reachable by anyone else ([Quick Start](../overview/quick-start.mdx)).
+- [ ] The app port is published on `127.0.0.1` only.
+- [ ] TLS works, and HTTP redirects to HTTPS.
+- [ ] `EXTERNAL_URL` is the public address. With a share host, it is the share host.
+- [ ] `AllowedHosts` lists every host name in use (the share host and the private host, if you have both), plus `localhost` and `127.0.0.1`.
+- [ ] `TRUSTED_PROXIES` lists only the direct proxies. After signing in through the proxy, the session cookie has the `Secure` flag.
+- [ ] Behind a tunnel or a CDN, the proxy passes the real client in `X-Forwarded-For`.
+- [ ] If you expose share links, requests for any other path fail, in any letter case, and the share page loads. Only `/api/config`, and `/api/auth/me` if you don't answer it with `401`, are refused.
+- [ ] Bandwidth and connection limits are set on `/download` and `/view`.
+- [ ] Backups are encrypted and tested ([Backup](./backup.mdx)).
+- [ ] The image is pinned to a version, not `latest`, and you back up before every upgrade ([Upgrading](./upgrading.mdx)).

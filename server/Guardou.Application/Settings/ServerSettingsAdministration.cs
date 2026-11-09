@@ -1,8 +1,9 @@
+using Guardou.Application.Audit;
 using Guardou.Domain.Settings;
 
 namespace Guardou.Application.Settings;
 
-public sealed class ServerSettingsAdministration(EffectiveSettings<ServerSettings> settings)
+public sealed class ServerSettingsAdministration(EffectiveSettings<ServerSettings> settings, AuditLog audit)
 {
     public async Task<ServerSettingsView> GetAsync(CancellationToken cancellationToken)
     {
@@ -17,6 +18,7 @@ public sealed class ServerSettingsAdministration(EffectiveSettings<ServerSetting
     public async Task<ServerSettingsView> ChangeAsync(ServerSettings requested, CancellationToken cancellationToken)
     {
         await settings.SaveAsync(ServerSettingsSchema.Normalize(requested), cancellationToken);
+        audit.SettingsChanged(AuditSections.Server);
         return await GetAsync(cancellationToken);
     }
 
@@ -32,6 +34,8 @@ public sealed class ServerSettingsAdministration(EffectiveSettings<ServerSetting
             effective.TrashRetentionDays,
             effective.UploadConcurrency,
             effective.UploadChunkSizeMb,
+            effective.MaxFileSizeMb,
+            effective.MinFreeSpaceMb,
             settings.Locked);
     }
 }

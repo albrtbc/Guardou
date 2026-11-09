@@ -15,6 +15,7 @@ public sealed class ItemOrganizer
     private readonly ItemEntryFactory _entries;
     private readonly PreviewTasks _previews;
     private readonly StorageReservations _reservations;
+    private readonly ItemMoveLocks _moveLocks;
     private readonly TimeProvider _time;
 
     internal ItemOrganizer(
@@ -26,6 +27,7 @@ public sealed class ItemOrganizer
         ItemEntryFactory entries,
         PreviewTasks previews,
         StorageReservations reservations,
+        ItemMoveLocks moveLocks,
         TimeProvider time)
     {
         _store = store;
@@ -36,16 +38,29 @@ public sealed class ItemOrganizer
         _entries = entries;
         _previews = previews;
         _reservations = reservations;
+        _moveLocks = moveLocks;
         _time = time;
     }
 
     public async Task<ItemEntry> CreateFolderAsync(string ownerId, string parentId, string name, CancellationToken cancellationToken)
     {
-        ItemPath parent = await _items.FindActiveFolderAsync(ownerId, parentId, cancellationToken);
-        await _placement.ResolveNameAsync(parent.Item, ItemPlacement.ValidName(name), ConflictPolicy.Fail, null, cancellationToken);
-        Item folder = Item.CreateFolder(parent.Item, name, ownerId, _time.GetUtcNow());
-        _store.Add(folder);
-        await _store.SaveAsync(cancellationToken);
+        Item folder;
+        SemaphoreSlim ownerLock = _moveLocks.For(ownerId);
+        await ownerLock.WaitAsync(cancellationToken);
+        try
+        {
+            ItemPath parent = await _items.FindActiveFolderAsync(ownerId, parentId, cancellationToken);
+            FolderDepth.EnsureWithin(parent.Ancestors.Count + 1);
+            await _placement.ResolveNameAsync(parent.Item, ItemPlacement.ValidName(name), ConflictPolicy.Fail, null, cancellationToken);
+            folder = Item.CreateFolder(parent.Item, name, ownerId, _time.GetUtcNow());
+            _store.Add(folder);
+            await _store.SaveAsync(cancellationToken);
+        }
+        finally
+        {
+            ownerLock.Release();
+        }
+
         return await _entries.CreateAsync(folder, ownerId, cancellationToken);
     }
 
@@ -71,6 +86,25 @@ public sealed class ItemOrganizer
         ConflictPolicy conflict,
         CancellationToken cancellationToken)
     {
+        SemaphoreSlim ownerLock = _moveLocks.For(ownerId);
+        await ownerLock.WaitAsync(cancellationToken);
+        try
+        {
+            return await MoveLockedAsync(ownerId, id, destinationId, conflict, cancellationToken);
+        }
+        finally
+        {
+            ownerLock.Release();
+        }
+    }
+
+    private async Task<ItemEntry?> MoveLockedAsync(
+        string ownerId,
+        string id,
+        string destinationId,
+        ConflictPolicy conflict,
+        CancellationToken cancellationToken)
+    {
         ItemPath source = await _items.FindModifiableAsync(ownerId, id, cancellationToken);
         ItemPath destination = await _items.FindActiveFolderAsync(ownerId, destinationId, cancellationToken);
         Item item = source.Item;
@@ -82,6 +116,13 @@ public sealed class ItemOrganizer
         if (item.ParentId == destination.Item.Id)
         {
             return await _entries.CreateAsync(item, ownerId, cancellationToken);
+        }
+
+        int destinationDepth = destination.Ancestors.Count;
+        if (destinationDepth + 1 > source.Ancestors.Count)
+        {
+            int height = await _tree.FolderHeightAsync(item, TreeLimits.MaximumFolderDepth - destinationDepth, cancellationToken);
+            FolderDepth.EnsureWithin(destinationDepth + 1 + height);
         }
 
         string? name = await _placement.ResolveNameAsync(destination.Item, item.Name, conflict, source, cancellationToken);
@@ -109,19 +150,15 @@ public sealed class ItemOrganizer
             throw new InvalidItemRequestException("A folder cannot copy into itself.");
         }
 
-        long size = await ActiveSizeAsync(source.Item, cancellationToken);
+        IReadOnlyList<TreeNode> nodes = await _tree.ActiveSubtreeAsync(source.Item, source.Item.Name, cancellationToken);
+        FolderDepth.EnsureWithin(destination.Ancestors.Count + 1 + ItemTree.DeepestFolderLevel(nodes));
+        long size = nodes.Sum(node => node.Item.Size);
         Item? copy = await _reservations.ReserveAsync(
             ownerId,
             size,
             () => PlaceCopyAsync(source, destination.Item, conflict, ownerId, cancellationToken),
             cancellationToken);
         return copy is null ? null : await _entries.CreateAsync(copy, ownerId, cancellationToken);
-    }
-
-    private async Task<long> ActiveSizeAsync(Item item, CancellationToken cancellationToken)
-    {
-        IReadOnlyList<TreeNode> nodes = await _tree.ActiveSubtreeAsync(item, item.Name, cancellationToken);
-        return nodes.Sum(node => node.Item.Size);
     }
 
     private async Task<Item?> PlaceCopyAsync(

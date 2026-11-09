@@ -88,6 +88,12 @@ class UploadQueueController extends Notifier<UploadQueueState> {
       for (final item in state.items)
         if (!item.status.isPending) item.id,
     };
+    for (final id in finished) {
+      final job = _jobs[id];
+      if (job != null) {
+        _forgetSession(job);
+      }
+    }
     _jobs.removeWhere((id, _) => finished.contains(id));
     state = state.withItems([
       for (final item in state.items)
@@ -209,6 +215,9 @@ class UploadQueueController extends Notifier<UploadQueueState> {
     DioException(error: ApiProblem(:final codes)) when codes.contains(ConflictSession.uploadInProgressCode) =>
       UploadFailure.uploadInProgress,
     DioException(error: ApiProblem(isQuotaExceeded: true)) => UploadFailure.quotaExceeded,
+    DioException(error: ApiProblem(isFileTooLarge: true)) => UploadFailure.fileTooLarge,
+    DioException(error: ApiProblem(isStorageFull: true)) => UploadFailure.storageFull,
+    DioException(error: ApiProblem(isTooManyUploads: true)) => UploadFailure.tooManyUploads,
     _ => UploadFailure.other,
   };
 

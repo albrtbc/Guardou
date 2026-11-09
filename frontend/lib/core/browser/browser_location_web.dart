@@ -9,4 +9,7 @@ class _WebBrowserLocation implements BrowserLocation {
 
   @override
   void assign(Uri uri) => web.window.location.assign(uri.toString());
+
+  @override
+  void open(Uri uri) => web.window.open(uri.toString(), '_blank', 'noopener,noreferrer');
 }

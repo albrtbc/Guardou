@@ -90,7 +90,13 @@ internal sealed class ItemEntryFactory(
         CancellationToken cancellationToken)
     {
         string rootId = ItemId.Format(shareRootId);
-        return ReadOnlyEntries(await CreateAsync(items, viewerId, cancellationToken), entry => entry.Id == rootId);
+        IReadOnlyList<ItemEntry> entries = await CreateAsync(items, viewerId, cancellationToken);
+        return ReadOnlyEntries(viewerId is null ? entries.Select(Anonymous) : entries, entry => entry.Id == rootId);
+    }
+
+    private static ItemEntry Anonymous(ItemEntry entry)
+    {
+        return entry with { Creator = entry.Creator with { Id = null } };
     }
 
     private static List<ItemEntry> ReadOnlyEntries(IEnumerable<ItemEntry> entries, Func<ItemEntry, bool> isShareRoot)

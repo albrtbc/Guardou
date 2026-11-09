@@ -12,13 +12,23 @@ public sealed class ItemDownloads
     private readonly IMimeTypeMap _mimeTypes;
     private readonly AccessibleItems _items;
     private readonly ItemTree _tree;
+    private readonly ArchiveLimits _limits;
+    private readonly ArchiveSlots _slots;
 
-    internal ItemDownloads(IBlobStore blobs, IMimeTypeMap mimeTypes, AccessibleItems items, ItemTree tree)
+    internal ItemDownloads(
+        IBlobStore blobs,
+        IMimeTypeMap mimeTypes,
+        AccessibleItems items,
+        ItemTree tree,
+        ArchiveLimits limits,
+        ArchiveSlots slots)
     {
         _blobs = blobs;
         _mimeTypes = mimeTypes;
         _items = items;
         _tree = tree;
+        _limits = limits;
+        _slots = slots;
     }
 
     public async Task<FileDownload> OpenFileAsync(string userId, string id, CancellationToken cancellationToken)
@@ -42,17 +52,27 @@ public sealed class ItemDownloads
             throw new InvalidItemRequestException("Select at least one item.");
         }
 
-        List<Item> roots = [];
+        List<Item> roots = await SelectedRootsAsync(userId, ids, cancellationToken);
         List<TreeNode> nodes = [];
-        foreach (string id in ids)
+        long bytes = 0;
+        foreach (Item item in roots)
         {
-            Item item = (await _items.FindActiveAsync(userId, id, cancellationToken)).Item;
             string name = item.IsRoot ? DefaultArchiveName : item.Name;
-            roots.Add(item);
-            nodes.AddRange(await _tree.ActiveSubtreeAsync(item, name, cancellationToken));
+            IReadOnlyList<TreeNode> subtree = await _tree.ActiveSubtreeAsync(item, name, _limits.MaximumEntries - nodes.Count, cancellationToken);
+            nodes.AddRange(subtree);
+            bytes += subtree.Sum(node => node.Item.Size);
+            if (nodes.Count > _limits.MaximumEntries || bytes > _limits.MaximumBytes)
+            {
+                throw new ArchiveTooLargeException(_limits);
+            }
         }
 
         return new ItemArchive(ArchiveName(roots), nodes);
+    }
+
+    public IDisposable AcquireArchiveSlot(ArchiveAudience audience)
+    {
+        return _slots.Acquire(audience);
     }
 
     public async Task WriteArchiveAsync(ItemArchive archive, Stream output, CancellationToken cancellationToken)
@@ -62,6 +82,25 @@ public sealed class ItemDownloads
         {
             await WriteEntryAsync(zip, node, cancellationToken);
         }
+    }
+
+    private async Task<List<Item>> SelectedRootsAsync(string userId, IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    {
+        List<ItemAccess> selected = [];
+        HashSet<Guid> selectedIds = [];
+        foreach (string id in ids)
+        {
+            ItemAccess access = await _items.FindActiveAsync(userId, id, cancellationToken);
+            if (selectedIds.Add(access.Item.Id))
+            {
+                selected.Add(access);
+            }
+        }
+
+        return selected
+            .Where(access => !access.Path.Ancestors.Any(ancestor => selectedIds.Contains(ancestor.Id)))
+            .Select(access => access.Item)
+            .ToList();
     }
 
     private static string ArchiveName(List<Item> roots)
@@ -75,7 +114,7 @@ public sealed class ItemDownloads
         string? key = node.Item.StorageKey;
         ZipArchiveEntry entry = key is null
             ? zip.CreateEntry(node.Path + "/")
-            : zip.CreateEntry(node.Path, CompressionLevel.Fastest);
+            : zip.CreateEntry(node.Path, CompressionLevel.NoCompression);
         entry.LastWriteTime = node.Item.Modified;
         await using Stream target = await entry.OpenAsync(cancellationToken);
         if (key is not null)

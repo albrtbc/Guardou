@@ -72,6 +72,19 @@ public sealed class ProfilePicturesTests : SignedInTests
     }
 
     [Fact]
+    public async Task ReplaceRefusesAPictureOverThePixelLimit()
+    {
+        UserAccount admin = await Client.FindUserAsync(TestServerFactory.AdminUsername);
+
+        HttpResponseMessage response = await Client.ReplacePictureAsync(admin.Id, PreviewsApi.LargePng(20_000, 20_000));
+        string body = await response.Content.ReadAsStringAsync(CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("megapixels", body, StringComparison.Ordinal);
+        Assert.False((await Client.FindUserAsync(TestServerFactory.AdminUsername)).HasPicture);
+    }
+
+    [Fact]
     public async Task ReplaceRefusesAMissingUser()
     {
         HttpResponseMessage response = await Client.ReplacePictureAsync("missing", PreviewsApi.Png(64, 64));

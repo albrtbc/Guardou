@@ -1,0 +1,49 @@
+---
+sidebar_position: 4
+description: Upgrade Guardou, or move from upstream to this fork
+---
+
+# Upgrading
+
+## Upgrade steps
+
+1. [Back up](./backup.mdx) the data folder. Guardou migrates the database when it starts, and migrations can't be undone.
+2. Change the image tag in `docker-compose.yaml` to the new version. Don't use `latest`.
+3. Run `docker compose pull`, then `docker compose up -d`.
+4. Check `docker compose logs guardou`, and that the container turns healthy.
+
+Compare your `docker-compose.yaml` and `.env` with the ones of the new release. New releases can add settings.
+
+---
+
+## Moving from upstream to this fork
+
+Use the same data folder and change the image from `ghcr.io/guardouapp/guardou` to `ghcr.io/albrtbc/guardou`. Back up first.
+
+The fork doesn't add database migrations of its own. Its base is upstream `v0.10.0` plus a later upstream commit that adds the `AddStorageQuotas` migration. This has consequences:
+
+- Moving from upstream `0.10.0` applies a migration that `0.10.0` doesn't know. You can't go back to it with the new data folder.
+- Only move from an upstream version at or below the fork's base. A newer upstream version may have migrations that the fork doesn't know.
+- Going back means restoring the backup you made first.
+
+## What you will notice on the first start
+
+- **Everyone signs in again once.** Sessions started before the upgrade don't carry the sign-in time that the fork checks, so they are refused. From now on a session lasts at most 30 days from the sign-in, however often it is used.
+- **Tasks that were running become failed.** A task that was still `Running` when the old version stopped is marked `Failed`, with a message that starts with "Interrupted". Open the admin Tasks page (`/admin/tasks`) and use **Reset** on a task, or **Retry failed tasks**, to queue them again. At most one task per worker is affected.
+- **Existing data keeps its file modes.** Only new files and folders are created with the stricter `0600` and `0700` modes. See [File permissions](./backup.mdx#file-permissions).
+- **`PUID` and `PGID` can't be `0`.** The container refuses to start as root. Set them to the owner of the data folder (default `1000`).
+- **Set `TRUSTED_PROXIES` if you use a reverse proxy.** Without it, all clients look like the proxy: they share one rate-limit bucket (10 sign-ins per minute, and the share API burst), and session cookies lose the `Secure` flag behind TLS. See [Reverse Proxy](./reverse-proxy.mdx#trusted_proxies).
+- **Uploads and copies need free space.** `MIN_FREE_SPACE_MB` defaults to 1024. On a disk with less than about 1 GB free, counting the bytes of pending uploads, uploads and copies are refused with `507`. Lower it, or free space.
+- **Share links no longer join automatically.** Opening a share link used to add it to the signed-in user's *Shared with me*. Now the page has an **Add to Shared with me** button.
+- **Accounts lock after failed sign-ins.** Five failed password sign-ins lock the account for 15 minutes.
+
+## Changes to the Compose example
+
+The `docker-compose.yaml` of the fork differs from upstream's:
+
+- The port is published as `127.0.0.1:2286:2286`. If you reach Guardou from other machines without a proxy, put a [reverse proxy](./reverse-proxy.mdx) in front of it.
+- The container drops all Linux capabilities except `CHOWN`, `DAC_OVERRIDE`, `SETUID` and `SETGID`, which its entrypoint needs, and sets `no-new-privileges`. Never add `DAC_READ_SEARCH`: it allows a known container escape.
+- It sets `stop_grace_period: 35s`, so that running tasks can finish when the container stops.
+- It has log rotation, and commented-out `mem_limit`, `cpus` and `pids_limit` lines. Size them to your machine.
+
+New settings are described in [Environment Variables](./environment-variables.mdx).

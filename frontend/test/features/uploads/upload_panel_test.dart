@@ -67,6 +67,23 @@ void main() {
     expect(find.text('1 KB of 2 KB'), findsOneWidget);
   });
 
+  for (final (failure, message) in [
+    (UploadFailure.quotaExceeded, 'Not enough space.'),
+    (UploadFailure.fileTooLarge, 'File is too large.'),
+    (UploadFailure.storageFull, 'The server is out of space.'),
+    (UploadFailure.tooManyUploads, 'Too many uploads at once. Try again soon.'),
+    (UploadFailure.other, 'The upload failed'),
+  ]) {
+    testWidgets('explains a failed upload: $failure', (tester) async {
+      await pumpPanel(
+        tester,
+        UploadQueueState(items: [const UploadItem(id: 0, name: 'a.bin', size: 10).failed(failure)]),
+      );
+
+      expect(find.text(message), findsOneWidget);
+    });
+  }
+
   testWidgets('shows nothing when the queue is empty', (tester) async {
     await pumpPanel(tester, const UploadQueueState());
 

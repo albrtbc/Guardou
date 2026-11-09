@@ -1,6 +1,7 @@
 using System.Net.Mime;
 using System.Security.Claims;
 using Guardou.Api.Authentication;
+using Guardou.Api.Hosting;
 using Guardou.Api.Models;
 using Guardou.Application.Authentication;
 using Guardou.Application.Users;
@@ -8,6 +9,7 @@ using Guardou.Domain.Users;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Guardou.Api.Controllers;
 
@@ -21,12 +23,15 @@ public sealed class AuthController(
     IAntiforgery antiforgery)
     : ControllerBase
 {
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimits.Auth)]
     [HttpPost("login", Name = "Login")]
     [Consumes(MediaTypeNames.Application.Json)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
         PasswordLoginStatus status = await passwordLogin.SignInAsync(request.Username, request.Password, request.RememberMe, cancellationToken);
@@ -38,11 +43,14 @@ public sealed class AuthController(
         };
     }
 
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimits.Auth)]
     [HttpPost("register", Name = "Register")]
     [Consumes(MediaTypeNames.Application.Json)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
         RegistrationResult result = await registration.RegisterFirstAdministratorAsync(request.Username, request.DisplayName, request.Email, request.Password);
@@ -76,6 +84,7 @@ public sealed class AuthController(
         return new CurrentUser(account.Id, account.Username, account.DisplayName, account.Email, account.IsAdmin, account.HasPicture);
     }
 
+    [AllowAnonymous]
     [HttpGet("antiforgery", Name = "GetAntiforgeryToken")]
     [ProducesResponseType<AntiforgeryToken>(StatusCodes.Status200OK)]
     public ActionResult<AntiforgeryToken> Antiforgery()

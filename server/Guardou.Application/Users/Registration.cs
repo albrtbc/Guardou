@@ -1,6 +1,8 @@
+using Guardou.Application.Audit;
+
 namespace Guardou.Application.Users;
 
-public sealed class Registration(IUserAccountStore store, UserAdministration administration)
+public sealed class Registration(IUserAccountStore store, UserAdministration administration, AuditLog audit)
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
 
@@ -19,10 +21,18 @@ public sealed class Registration(IUserAccountStore store, UserAdministration adm
                 return RegistrationResult.Closed;
             }
 
-            UserAccountResult result = await administration.SetAsync(username, displayName, email, password, administrator: true);
-            return result.Succeeded
-                ? RegistrationResult.Registered
-                : RegistrationResult.Rejected(result.Errors.Select(error => error.Description).ToList());
+            UserAccountResult result = await administration.SetWithoutAuditAsync(username, displayName, email, password, administrator: true);
+            if (!result.Succeeded)
+            {
+                return RegistrationResult.Rejected(result.Errors.Select(error => error.Description).ToList());
+            }
+
+            if (await store.FindByUsernameAsync(username) is { } account)
+            {
+                audit.Registered(account.Id, account.Username);
+            }
+
+            return RegistrationResult.Registered;
         }
         finally
         {

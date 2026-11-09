@@ -82,14 +82,15 @@ internal sealed class FakeUserAccountStore : IUserAccountStore
         return Task.FromResult(UserAccountResult.Success);
     }
 
-    public Task RemoveLoginAsync(string id, string provider)
+    public Task<bool> RemoveLoginAsync(string id, string provider)
     {
-        foreach ((string Provider, string Key) login in Logins.Where(login => login.Value == id && login.Key.Provider == provider).Select(login => login.Key).ToList())
+        List<(string Provider, string Key)> removed = Logins.Where(login => login.Value == id && login.Key.Provider == provider).Select(login => login.Key).ToList();
+        foreach ((string Provider, string Key) login in removed)
         {
             Logins.Remove(login);
         }
 
-        return Task.CompletedTask;
+        return Task.FromResult(removed.Count > 0);
     }
 
     public Task SetQuotaAsync(string id, long? quotaBytes)

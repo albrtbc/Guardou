@@ -17,7 +17,7 @@ enum UploadStatus {
   bool get isPending => this == queued || this == uploading || this == paused;
 }
 
-enum UploadFailure { uploadInProgress, quotaExceeded, other }
+enum UploadFailure { uploadInProgress, quotaExceeded, fileTooLarge, storageFull, tooManyUploads, other }
 
 @immutable
 class UploadItem {

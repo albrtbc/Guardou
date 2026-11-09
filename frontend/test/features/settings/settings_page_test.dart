@@ -36,6 +36,8 @@ void main() {
     trashRetentionDays: 30,
     uploadConcurrency: 3,
     uploadChunkSizeMb: 64,
+    maxFileSizeMb: null,
+    minFreeSpaceMb: 1024,
     locked: [],
   );
   const concurrencyLabel = 'Generate previews: tasks at the same time';
@@ -200,6 +202,27 @@ void main() {
       () => settings.changeServerSettings(
         const ServerSettings(externalUrl: null, trashRetentionDays: 30, uploadConcurrency: 5, uploadChunkSizeMb: 16),
       ),
+    ).called(1);
+  });
+
+  testWidgets('saves the storage limits and clears the maximum file size', (tester) async {
+    when(() => settings.changeServerSettings(any())).thenAnswer((_) async => server);
+    await pumpSettings(tester);
+    await expand(tester, 'Server');
+
+    await tester.enterText(field('Maximum file size (MB)'), '500');
+    await tester.enterText(field('Free space to keep (MB)'), '2048');
+    await tapVisible(tester, button('Save').hitTestable());
+    await tester.enterText(field('Maximum file size (MB)'), '');
+    await tapVisible(tester, button('Save').hitTestable());
+
+    verify(
+      () => settings.changeServerSettings(
+        const ServerSettings(externalUrl: null, maxFileSizeMb: 500, minFreeSpaceMb: 2048),
+      ),
+    ).called(1);
+    verify(
+      () => settings.changeServerSettings(const ServerSettings(externalUrl: null, minFreeSpaceMb: 2048)),
     ).called(1);
   });
 

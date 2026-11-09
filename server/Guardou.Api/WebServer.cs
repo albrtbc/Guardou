@@ -56,7 +56,11 @@ public static class WebServer
         {
             options.HeaderName = AntiforgeryHeaderName;
             options.Cookie.Name = Product.CookieName("antiforgery");
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         });
+        services.AddOptions<ForwardedHeadersOptions>()
+            .Configure<IConfiguration>((options, configuration) => TrustedProxies.Apply(options, configuration[TrustedProxies.Key]));
+        RateLimits.Add(services);
         services.AddProblemDetails();
         services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
         services.AddOpenApi(options =>
@@ -83,18 +87,26 @@ public static class WebServer
 
     private static void UsePipeline(WebApplication app)
     {
+        app.UseForwardedHeaders();
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseHsts();
+        }
+
+        app.UseSecurityHeaders();
         app.UseExceptionHandler();
         app.UseStatusCodePages();
         app.UseDefaultFiles();
         StaticFileOptions staticFiles = new() { OnPrepareResponse = RevalidateStaticFile };
         app.UseStaticFiles(staticFiles);
+        app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapControllers();
         app.MapUploadContent();
-        app.MapHealthChecks("/health");
-        app.MapFallback("/api/{**path}", () => Results.NotFound());
-        app.MapFallbackToFile("index.html", staticFiles);
+        app.MapHealthChecks("/health").AllowAnonymous();
+        app.MapFallback("/api/{**path}", () => Results.NotFound()).AllowAnonymous();
+        app.MapFallbackToFile("index.html", staticFiles).AllowAnonymous();
     }
 }

@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../app/theme/app_tokens.dart';
 import '../../core/widgets/brand_mark.dart';
+import '../../core/widgets/source_code_link.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class SharedBrand extends StatelessWidget {
@@ -40,6 +41,7 @@ class SharedLinkError extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(leading: const SharedBrand()),
+      bottomNavigationBar: const SourceCodeLink(),
       body: Center(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(spacing),

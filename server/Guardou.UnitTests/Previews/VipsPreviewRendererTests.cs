@@ -142,6 +142,73 @@ public sealed class VipsPreviewRendererTests : IDisposable
         Assert.Empty(Directory.EnumerateFileSystemEntries(_paths.TemporaryDirectory));
     }
 
+    [Fact]
+    public async Task RefusesImagesOverThePixelLimit()
+    {
+        byte[] huge = TestImages.EncodeLarge(20_000, 20_000, ".png");
+
+        InvalidDataException exception = await Assert.ThrowsAsync<InvalidDataException>(() => RenderAsync(huge, "huge.png"));
+
+        Assert.Contains("20000 x 20000", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RefusesAnSvgNamedAsAPng()
+    {
+        byte[] svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"><rect width=\"10\" height=\"10\"/></svg>"u8.ToArray();
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => RenderAsync(svg, "drawing.png"));
+    }
+
+    [Theory]
+    [InlineData(".tif", "photo.jpg", "tiffload")]
+    [InlineData(".tif", "photo.png", "tiffload")]
+    [InlineData(".tif", "photo.webp", "tiffload")]
+    [InlineData(".jpg", "photo.tiff", "jpegload")]
+    [InlineData(".png", "photo.tif", "pngload")]
+    [InlineData(".jpg", "photo.avif", "jpegload")]
+    public async Task RefusesContentWhoseLoaderIsOutsideTheExtensionFamily(string actual, string fileName, string loader)
+    {
+        InvalidDataException exception = await Assert.ThrowsAsync<InvalidDataException>(
+            () => RenderAsync(TestImages.Encode(100, 50, actual), fileName));
+
+        Assert.Contains($"'{loader}'", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(".jpg", "photo.jpe")]
+    [InlineData(".png", "photo.jpg")]
+    [InlineData(".webp", "photo.png")]
+    [InlineData(".jpg", "photo.gif")]
+    [InlineData(".tif", "photo.TIF")]
+    [InlineData(".gif", "animation.gif")]
+    public async Task RendersWebImagesWhateverTheirWebExtensionAndTiffUnderItsOwn(string actual, string fileName)
+    {
+        IReadOnlyDictionary<PreviewSize, byte[]> previews = await RenderAsync(TestImages.Encode(100, 50, actual), fileName);
+
+        Assert.Equal((100, 50), Dimensions(previews[PreviewSize.Large]));
+    }
+
+    [Fact]
+    public async Task RendersUltraHdrJpegs()
+    {
+        byte[] ultraHdr = TestImages.EncodeUltraHdr(800, 400);
+
+        IReadOnlyDictionary<PreviewSize, byte[]> previews = await RenderAsync(ultraHdr, "pixel.jpg");
+
+        Assert.Equal((400, 200), Dimensions(previews[PreviewSize.Thumbnail]));
+        Assert.Equal((800, 400), Dimensions(previews[PreviewSize.Large]));
+    }
+
+    [Fact]
+    public async Task RendersEveryPreviewSizeFromOneDecode()
+    {
+        IReadOnlyDictionary<PreviewSize, byte[]> previews = await RenderAsync(TestImages.Encode(4000, 3000, ".jpg"), "large.jpg");
+
+        Assert.Equal((400, 300), Dimensions(previews[PreviewSize.Thumbnail]));
+        Assert.Equal((1920, 1440), Dimensions(previews[PreviewSize.Large]));
+    }
+
     private static (int Width, int Height) Dimensions(byte[] image)
     {
         using Image decoded = Image.NewFromBuffer(image);

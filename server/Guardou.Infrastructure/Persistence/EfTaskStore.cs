@@ -90,6 +90,31 @@ internal sealed class EfTaskStore(AppDbContext context) : ITaskStore
                 cancellationToken);
     }
 
+    public async Task<bool> ReleaseAsync(Guid id, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        int released = await Tasks
+            .Where(task => task.Id == id && task.State == TaskState.Running)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(task => task.State, TaskState.Pending)
+                    .SetProperty(task => task.Error, (string?)null)
+                    .SetProperty(task => task.Updated, now),
+                cancellationToken);
+        return released == 1;
+    }
+
+    public Task<int> FailAsync(TaskState state, string message, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        return Tasks
+            .Where(task => task.State == state)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(task => task.State, TaskState.Failed)
+                    .SetProperty(task => task.Error, message)
+                    .SetProperty(task => task.Updated, now),
+                cancellationToken);
+    }
+
     public async Task<IReadOnlyDictionary<TaskKind, TaskCounts>> CountAsync(CancellationToken cancellationToken)
     {
         var counts = await Tasks

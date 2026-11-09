@@ -8,6 +8,10 @@ public interface IUploadStore
 
     Task<IReadOnlyList<Upload>> ToDestinationAsync(UploadDestination destination, CancellationToken cancellationToken);
 
+    Task<int> CountActiveOfOwnerAsync(string ownerId, DateTimeOffset since, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<UploadSize>> SizesAsync(CancellationToken cancellationToken);
+
     Task<IReadOnlyList<Upload>> LastWrittenBeforeAsync(DateTimeOffset time, CancellationToken cancellationToken);
 
     void Add(Upload upload);

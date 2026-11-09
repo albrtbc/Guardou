@@ -17,6 +17,8 @@ class MediaViewer extends StatelessWidget {
     required this.viewerRoute,
     required this.leading,
     this.closeLocation,
+    this.actions = const [],
+    this.footer,
   });
 
   final ItemEntry entry;
@@ -25,6 +27,8 @@ class MediaViewer extends StatelessWidget {
   final String Function(String id) viewerRoute;
   final Widget leading;
   final String? closeLocation;
+  final List<Widget> actions;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +56,8 @@ class MediaViewer extends StatelessWidget {
           entry: entry,
           source: source,
           leading: leading,
+          actions: actions,
+          footer: footer,
           overlays: [
             if (previous != null)
               Align(

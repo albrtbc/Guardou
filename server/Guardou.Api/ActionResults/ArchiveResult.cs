@@ -6,11 +6,12 @@ using Microsoft.Net.Http.Headers;
 
 namespace Guardou.Api.ActionResults;
 
-internal sealed class ArchiveResult(ItemArchive archive, ItemDownloads downloads) : IActionResult
+internal sealed class ArchiveResult(ItemArchive archive, ItemDownloads downloads, ArchiveAudience audience) : IActionResult
 {
     public async Task ExecuteResultAsync(ActionContext context)
     {
         HttpResponse response = context.HttpContext.Response;
+        using IDisposable slot = downloads.AcquireArchiveSlot(audience);
         AllowZipHeaderWrites(context.HttpContext);
         ContentDispositionHeaderValue disposition = new(DispositionTypeNames.Attachment);
         disposition.SetHttpFileName(archive.Name);

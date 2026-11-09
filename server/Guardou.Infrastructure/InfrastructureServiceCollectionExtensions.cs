@@ -1,3 +1,4 @@
+using Guardou.Application.Audit;
 using Guardou.Application.Authentication;
 using Guardou.Application.Files;
 using Guardou.Application.Persistence;
@@ -22,6 +23,7 @@ using Guardou.Infrastructure.Previews;
 using Guardou.Infrastructure.Profiles;
 using Guardou.Infrastructure.Storage;
 using Guardou.Infrastructure.Uploads;
+using Guardou.Infrastructure.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
@@ -29,6 +31,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using tusdotnet.Stores;
 
@@ -53,13 +56,18 @@ public static class InfrastructureServiceCollectionExtensions
         {
             identity.User.RequireUniqueEmail = true;
             ApplyPasswordPolicy(identity.Password, PasswordPolicy.Default);
+            identity.Lockout.AllowedForNewUsers = true;
+            identity.Lockout.MaxFailedAccessAttempts = 5;
+            identity.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         });
+        services.Configure<PasswordHasherOptions>(hasher => hasher.IterationCount = 210_000);
 
         services.AddScoped<IUserAccountStore, IdentityUserAccountStore>();
         services.AddScoped<IDatabaseMigrator, DatabaseMigrator>();
         services.AddScoped<IItemStore, EfItemStore>();
         services.AddScoped<StorageUsageCounter>();
         services.AddScoped<IStorageQuotaStore, EfStorageQuotaStore>();
+        services.AddSingleton<IStorageCapacity, StorageCapacity>();
         services.AddScoped<ItemIndexWriter>();
         services.AddScoped<IItemIndexRebuilder>(provider => provider.GetRequiredService<ItemIndexWriter>());
         services.AddScoped<IItemIndex, EfItemIndex>();
@@ -112,6 +120,8 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddHealthChecks().AddDbContextCheck<AppDbContext>().AddDbContextCheck<IndexDbContext>();
         services.AddScoped<ISessionService, IdentitySessionService>();
+        services.AddHttpContextAccessor();
+        services.Replace(ServiceDescriptor.Singleton<IAuditContext, HttpAuditContext>());
         return services;
     }
 

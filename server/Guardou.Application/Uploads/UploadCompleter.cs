@@ -14,6 +14,7 @@ public sealed class UploadCompleter
     private readonly IBlobStore _blobs;
     private readonly OwnedItems _items;
     private readonly ItemPlacement _placement;
+    private readonly ItemMoveLocks _moveLocks;
     private readonly ItemEntryFactory _entries;
     private readonly PreviewTasks _previews;
     private readonly TimeProvider _time;
@@ -26,6 +27,7 @@ public sealed class UploadCompleter
         IBlobStore blobs,
         OwnedItems items,
         ItemPlacement placement,
+        ItemMoveLocks moveLocks,
         ItemEntryFactory entries,
         PreviewTasks previews,
         TimeProvider time)
@@ -37,6 +39,7 @@ public sealed class UploadCompleter
         _blobs = blobs;
         _items = items;
         _placement = placement;
+        _moveLocks = moveLocks;
         _entries = entries;
         _previews = previews;
         _time = time;
@@ -50,9 +53,7 @@ public sealed class UploadCompleter
             throw new InvalidItemRequestException("The upload is not complete.");
         }
 
-        ItemPath target = await _items.TryFindActiveAsync(ownerId, upload.FolderId, cancellationToken)
-            ?? throw OwnedItems.NotFound(ItemId.Format(upload.FolderId));
-        Item folder = await EnsureFoldersAsync(target.Item, upload, cancellationToken);
+        Item folder = await EnsureFoldersWithinDepthAsync(ownerId, upload, cancellationToken);
         string? placedName = await _placement.ResolveNameAsync(folder, upload.Name, conflict, null, cancellationToken);
         Item? item = placedName is null ? null : await StoreAsync(folder, upload, placedName, cancellationToken);
         await ForgetAsync(upload, cancellationToken);
@@ -63,6 +64,23 @@ public sealed class UploadCompleter
 
         await _previews.EnqueueAsync([item], TaskPriority.Normal, cancellationToken);
         return await _entries.CreateAsync(item, ownerId, cancellationToken);
+    }
+
+    private async Task<Item> EnsureFoldersWithinDepthAsync(string ownerId, Upload upload, CancellationToken cancellationToken)
+    {
+        SemaphoreSlim ownerLock = _moveLocks.For(ownerId);
+        await ownerLock.WaitAsync(cancellationToken);
+        try
+        {
+            ItemPath target = await _items.TryFindActiveAsync(ownerId, upload.FolderId, cancellationToken)
+                ?? throw OwnedItems.NotFound(ItemId.Format(upload.FolderId));
+            FolderDepth.EnsureWithin(target.Ancestors.Count + upload.Destination.FolderNames.Count);
+            return await EnsureFoldersAsync(target.Item, upload, cancellationToken);
+        }
+        finally
+        {
+            ownerLock.Release();
+        }
     }
 
     private async Task<Item> StoreAsync(Item folder, Upload upload, string name, CancellationToken cancellationToken)

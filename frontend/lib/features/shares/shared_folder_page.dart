@@ -11,6 +11,7 @@ import '../../api/generated/models/item_kind.dart';
 import '../../app/router/routes.dart';
 import '../../core/browser/browser_files.dart';
 import '../../core/widgets/page_header.dart';
+import '../../core/widgets/source_code_link.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../files/drag_select_area.dart';
 import '../files/file_arrangement.dart';
@@ -27,6 +28,7 @@ import '../files/item_actions_menu.dart';
 import '../files/item_interactions.dart';
 import '../files/selection.dart';
 import 'shared_items.dart';
+import 'shared_join_button.dart';
 import 'shared_link_states.dart';
 import 'shares_service.dart';
 
@@ -116,6 +118,7 @@ class _SharedFolderState extends ConsumerState<_SharedFolder> {
         leading: const SharedBrand(),
         title: Text(folder.ancestors.firstOrNull?.name ?? folder.entry.name, overflow: TextOverflow.ellipsis),
         actions: [
+          SharedJoinButton(token: _token, itemId: folder.entry.id, location: Routes.folder(folder.entry.id)),
           IconButton(
             tooltip: l10n.actionDownload,
             onPressed: () => _download(folder.entry),
@@ -155,6 +158,7 @@ class _SharedFolderState extends ConsumerState<_SharedFolder> {
               ),
             },
           ),
+          const SourceCodeLink(),
         ],
       ),
     );

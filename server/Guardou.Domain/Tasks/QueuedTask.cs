@@ -3,6 +3,7 @@ namespace Guardou.Domain.Tasks;
 public sealed class QueuedTask
 {
     public const int MaximumErrorLength = 2000;
+    public const string InterruptedError = "Interrupted: the server stopped while this task was running";
 
     private QueuedTask(Guid id, TaskKind kind, Guid itemId, TaskPriority priority, DateTimeOffset created)
     {

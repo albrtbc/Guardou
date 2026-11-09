@@ -5,6 +5,8 @@ namespace Guardou.Application.Files;
 
 internal sealed class ItemPlacement(IItemStore store, ShareCleanup shares, TimeProvider time)
 {
+    public const int MaximumNumberedNames = 10_000;
+
     public async Task<string?> ResolveNameAsync(
         Item folder,
         string name,
@@ -34,7 +36,7 @@ internal sealed class ItemPlacement(IItemStore store, ShareCleanup shares, TimeP
 
     private async Task<string> FreeNameAsync(Item folder, string name, CancellationToken cancellationToken)
     {
-        for (int number = 1; ; number++)
+        for (int number = 1; number <= MaximumNumberedNames; number++)
         {
             string candidate = ItemName.Numbered(name, number);
             if (await store.FindChildAsync(folder.Id, candidate, cancellationToken) is null)
@@ -42,6 +44,8 @@ internal sealed class ItemPlacement(IItemStore store, ShareCleanup shares, TimeP
                 return candidate;
             }
         }
+
+        throw new ItemConflictException(name, $"No free name for '{name}' was found after {MaximumNumberedNames} attempts. Rename the item first.");
     }
 
     private async Task<string> ReplaceAsync(Item existing, CancellationToken cancellationToken)

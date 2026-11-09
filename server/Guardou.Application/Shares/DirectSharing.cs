@@ -1,3 +1,4 @@
+using Guardou.Application.Audit;
 using Guardou.Application.Files;
 using Guardou.Application.Users;
 using Guardou.Domain.Files;
@@ -14,6 +15,7 @@ public sealed class DirectSharing
     private readonly SharedItems _links;
     private readonly ItemEntryFactory _entries;
     private readonly TimeProvider _time;
+    private readonly AuditLog _audit;
 
     internal DirectSharing(
         IDirectShareStore shares,
@@ -22,7 +24,8 @@ public sealed class DirectSharing
         IUserDirectory users,
         SharedItems links,
         ItemEntryFactory entries,
-        TimeProvider time)
+        TimeProvider time,
+        AuditLog audit)
     {
         _shares = shares;
         _store = store;
@@ -31,6 +34,7 @@ public sealed class DirectSharing
         _links = links;
         _entries = entries;
         _time = time;
+        _audit = audit;
     }
 
     public async Task<IReadOnlyList<UserSummary>> ListRecipientsAsync(string ownerId, string id, CancellationToken cancellationToken)
@@ -79,6 +83,7 @@ public sealed class DirectSharing
         {
             _shares.Remove(share);
             await _shares.SaveAsync(cancellationToken);
+            _audit.DirectShareRemoved(item.Id, userId);
         }
     }
 
@@ -103,6 +108,7 @@ public sealed class DirectSharing
         {
             _shares.Add(DirectShare.Create(item.Id, userId, _time.GetUtcNow()));
             await _shares.SaveAsync(cancellationToken);
+            _audit.DirectShareAdded(item.Id, userId);
         }
     }
 

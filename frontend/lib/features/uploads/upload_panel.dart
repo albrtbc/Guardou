@@ -225,6 +225,9 @@ class _UploadRowState extends ConsumerState<_UploadRow> {
       UploadStatus.cancelled => l10n.uploadCancelled,
       UploadStatus.failed when item.failure == UploadFailure.uploadInProgress => l10n.uploadInProgressElsewhere,
       UploadStatus.failed when item.failure == UploadFailure.quotaExceeded => l10n.uploadQuotaExceeded,
+      UploadStatus.failed when item.failure == UploadFailure.fileTooLarge => l10n.uploadFileTooLarge,
+      UploadStatus.failed when item.failure == UploadFailure.storageFull => l10n.uploadStorageFull,
+      UploadStatus.failed when item.failure == UploadFailure.tooManyUploads => l10n.uploadTooManyUploads,
       UploadStatus.failed => l10n.uploadFailed,
       UploadStatus.completed => null,
     };

@@ -1,12 +1,16 @@
 using System.Text.Json;
+using Guardou.Api.Hosting;
 using Guardou.Application.Authentication;
 using Guardou.Domain.Authentication;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Guardou.Api.Controllers;
 
 [ApiController]
+[AllowAnonymous]
 [ApiExplorerSettings(IgnoreApi = true)]
 [Route("api/auth/oidc")]
 public sealed class OidcController(ExternalSignIn externalSignIn) : ControllerBase
@@ -14,6 +18,7 @@ public sealed class OidcController(ExternalSignIn externalSignIn) : ControllerBa
     private const string NotConfiguredCode = "notConfigured";
     private const string HomePath = "/";
 
+    [EnableRateLimiting(RateLimits.Auth)]
     [HttpGet("login")]
     public async Task<IActionResult> Login(string? returnUrl, CancellationToken cancellationToken)
     {
@@ -26,6 +31,7 @@ public sealed class OidcController(ExternalSignIn externalSignIn) : ControllerBa
         return Challenge(new AuthenticationProperties { RedirectUri = completion }, OidcSettings.Provider);
     }
 
+    [EnableRateLimiting(RateLimits.Auth)]
     [HttpGet("complete")]
     public async Task<IActionResult> Complete(string? returnUrl, CancellationToken cancellationToken)
     {

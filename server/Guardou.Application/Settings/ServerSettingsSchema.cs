@@ -24,6 +24,14 @@ internal sealed class ServerSettingsSchema : ISettingsSchema<ServerSettings>
             nameof(ServerSettings.UploadChunkSizeMb),
             settings => settings.UploadChunkSizeMb.ToString(CultureInfo.InvariantCulture),
             new(SettingsVariables.UploadChunkSizeMb, overrides => overrides.UploadChunkSizeMb is not null, (target, source) => target with { UploadChunkSizeMb = source.UploadChunkSizeMb })),
+        new(
+            nameof(ServerSettings.MaxFileSizeMb),
+            settings => settings.MaxFileSizeMb?.ToString(CultureInfo.InvariantCulture),
+            new(SettingsVariables.MaxFileSizeMb, overrides => overrides.MaxFileSizeMb is not null, (target, source) => target with { MaxFileSizeMb = source.MaxFileSizeMb })),
+        new(
+            nameof(ServerSettings.MinFreeSpaceMb),
+            settings => settings.MinFreeSpaceMb.ToString(CultureInfo.InvariantCulture),
+            new(SettingsVariables.MinFreeSpaceMb, overrides => overrides.MinFreeSpaceMb is not null, (target, source) => target with { MinFreeSpaceMb = source.MinFreeSpaceMb })),
     ];
 
     public static ServerSettings Normalize(ServerSettings settings)
@@ -46,6 +54,18 @@ internal sealed class ServerSettingsSchema : ISettingsSchema<ServerSettings>
                 $"The upload chunk size must be from {UploadPolicy.MinimumChunkSizeMb} to {UploadPolicy.MaximumChunkSizeMb} MB.");
         }
 
+        if (!StoragePolicy.IsValidMaxFileSize(settings.MaxFileSizeMb))
+        {
+            throw new InvalidSettingsException(
+                $"The maximum file size must be from {StoragePolicy.MinimumMaxFileSizeMb} to {StoragePolicy.MaximumMb} MB, or empty for no limit.");
+        }
+
+        if (!StoragePolicy.IsValidMinFreeSpace(settings.MinFreeSpaceMb))
+        {
+            throw new InvalidSettingsException(
+                $"The minimum free space must be from {StoragePolicy.MinimumMinFreeSpaceMb} to {StoragePolicy.MaximumMb} MB.");
+        }
+
         return settings with { ExternalUrl = SettingsUrl.Normalize(settings.ExternalUrl, "external URL") };
     }
 
@@ -55,6 +75,8 @@ internal sealed class ServerSettingsSchema : ISettingsSchema<ServerSettings>
             overrides.ExternalUrl,
             overrides.TrashRetentionDays ?? ServerSettings.Initial.TrashRetentionDays,
             overrides.UploadConcurrency ?? ServerSettings.Initial.UploadConcurrency,
-            overrides.UploadChunkSizeMb ?? ServerSettings.Initial.UploadChunkSizeMb));
+            overrides.UploadChunkSizeMb ?? ServerSettings.Initial.UploadChunkSizeMb,
+            overrides.MaxFileSizeMb,
+            overrides.MinFreeSpaceMb ?? ServerSettings.Initial.MinFreeSpaceMb));
     }
 }

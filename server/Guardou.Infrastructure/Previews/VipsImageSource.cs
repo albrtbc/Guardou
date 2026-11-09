@@ -1,20 +1,14 @@
-using System.Collections.Frozen;
-
 namespace Guardou.Infrastructure.Previews;
 
 internal sealed class VipsImageSource : IImageSource
 {
-    private static readonly FrozenSet<string> Extensions = FrozenSet.Create(
-        StringComparer.OrdinalIgnoreCase,
-        "avif", "gif", "jpe", "jpeg", "jpg", "png", "tif", "tiff", "webp");
-
     public bool Supports(string extension)
     {
-        return Extensions.Contains(extension);
+        return ImageGuard.IsDecodable(extension);
     }
 
-    public async Task<SourceImage> ReadAsync(string path, CancellationToken cancellationToken)
+    public Task<SourceImage> ReadAsync(string path, string extension, CancellationToken cancellationToken)
     {
-        return new SourceImage(await SourceFile.ReadAsync(path, cancellationToken), TiffOrientation.Normal);
+        return Task.FromResult(SourceImage.FromFile(path, extension));
     }
 }

@@ -209,6 +209,7 @@ class FileActions {
 
   String _messageOf(DioException error) => switch (error) {
     DioException(error: ApiProblem(isQuotaExceeded: true)) => _l10n.quotaExceeded,
+    DioException(error: ApiProblem(isStorageFull: true)) => _l10n.storageFull,
     _ when ConflictSession.isConflict(error) => _l10n.nameTaken,
     _ => _l10n.genericError,
   };

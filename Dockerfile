@@ -1,10 +1,13 @@
 # syntax=docker/dockerfile:1
 
+# Base images are pinned by digest next to their tag. Dependabot bumps both; to bump one by hand,
+# take the digest of the multi-platform index (docker buildx imagetools inspect <image>:<tag>).
+
 ARG FLUTTER_VERSION=3.47.8
 ARG FFMPEG_VERSION=8.1.3
 ARG FFMPEG_SHA256=7138d28c96d9d3e3af4ee3d8cad72741f8ffb40da90c1112235dea3ecd3178a3
 
-FROM --platform=$BUILDPLATFORM debian:bookworm-slim AS flutter-sdk
+FROM --platform=$BUILDPLATFORM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS flutter-sdk
 ARG FLUTTER_VERSION
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl git unzip xz-utils \
@@ -17,14 +20,14 @@ RUN flutter config --no-analytics --no-cli-animations \
 FROM flutter-sdk AS frontend
 WORKDIR /src/frontend
 COPY frontend/pubspec.yaml frontend/pubspec.lock ./
-RUN flutter pub get
+RUN flutter pub get --enforce-lockfile
 COPY api/openapi.json /src/api/openapi.json
 COPY frontend/ ./
 RUN dart run swagger_parser \
     && dart run build_runner build \
     && flutter build web --release --no-web-resources-cdn
 
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS server
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e AS server
 ARG TARGETARCH
 WORKDIR /src/server
 COPY server/nuget.config server/Directory.Build.props server/Directory.Packages.props server/.editorconfig ./
@@ -41,7 +44,7 @@ RUN dotnet publish Guardou.Cli/Guardou.Cli.csproj -c Release -o /app --no-restor
     -r "$(cat /tmp/rid)" --self-contained false \
     -p:UseAppHost=false -p:OpenApiGenerateDocuments=false
 
-FROM alpine:3.24 AS ffmpeg
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS ffmpeg
 ARG FFMPEG_VERSION
 ARG FFMPEG_SHA256
 RUN apk add --no-cache build-base nasm pkgconf zlib-dev dav1d-dev curl
@@ -64,12 +67,17 @@ RUN ./configure \
     && make -j"$(nproc)" \
     && make install
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
-RUN apk add --no-cache shadow su-exec libdav1d zlib poppler-utils fontconfig ttf-liberation libheif-tools \
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:486297ae006e95ee2ee3112a2c03e3d26e41fbbc64b7a29e28e7a18cc36b12bb
+# The base image is pinned by digest and the layers are cached, so this layer would never pick
+# up new package versions. CI passes a new value on every run to rebuild it.
+ARG APK_UPGRADE_KEY
+RUN apk upgrade --no-cache \
+    && apk add --no-cache shadow su-exec libdav1d zlib poppler-utils fontconfig ttf-liberation libheif-tools \
     && addgroup -g 1000 guardou \
     && adduser -D -u 1000 -G guardou -h /home/guardou guardou \
     && mkdir -p /data \
-    && chown guardou:guardou /data
+    && chown guardou:guardou /data \
+    && find / -xdev -perm /6000 -type f -exec chmod a-s {} +
 COPY --chmod=755 docker/guardou.sh /usr/local/bin/guardou
 COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/entrypoint
 COPY --from=ffmpeg /opt/ffmpeg/bin/ffmpeg /opt/ffmpeg/bin/ffprobe /usr/local/bin/

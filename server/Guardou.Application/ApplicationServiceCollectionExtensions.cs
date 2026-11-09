@@ -1,4 +1,5 @@
 using System.Reflection;
+using Guardou.Application.Audit;
 using Guardou.Application.Authentication;
 using Guardou.Application.Configuration;
 using Guardou.Application.Files;
@@ -24,8 +25,14 @@ public static class ApplicationServiceCollectionExtensions
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<IAuditContext, NoAuditContext>();
+        services.AddSingleton<AuditLog>();
         services.AddSingleton<TaskSignal>();
         services.AddSingleton<StorageQuotaLocks>();
+        services.AddSingleton<StorageWrites>();
+        services.AddSingleton<ItemMoveLocks>();
+        services.AddSingleton(ArchiveLimits.Default);
+        services.AddSingleton(_ => ArchiveSlots.WithDefaultCapacity());
         services.AddScoped<StorageReservations>();
         services.AddScoped<ITaskHandler, PreviewTaskHandler>();
         services.AddScoped<ITaskHandler, IndexTaskHandler>();

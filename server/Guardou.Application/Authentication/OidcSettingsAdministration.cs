@@ -1,3 +1,4 @@
+using Guardou.Application.Audit;
 using Guardou.Application.Settings;
 using Guardou.Domain.Authentication;
 
@@ -6,7 +7,8 @@ namespace Guardou.Application.Authentication;
 public sealed class OidcSettingsAdministration(
     EffectiveSettings<OidcSettings> settings,
     ServerSettingsAdministration server,
-    IOidcSettingsObserver observer)
+    IOidcSettingsObserver observer,
+    AuditLog audit)
 {
     public async Task LoadAsync(CancellationToken cancellationToken)
     {
@@ -44,6 +46,7 @@ public sealed class OidcSettingsAdministration(
     private async Task SaveAsync(OidcSettings requested, CancellationToken cancellationToken)
     {
         await settings.SaveAsync(requested, cancellationToken);
+        audit.SettingsChanged(AuditSections.Oidc);
         observer.Changed(await settings.GetAsync(cancellationToken));
     }
 
