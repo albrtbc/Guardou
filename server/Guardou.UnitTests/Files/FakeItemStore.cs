@@ -54,6 +54,13 @@ internal sealed class FakeItemStore : IItemStore
         return Collect(rootId, includeTrashed: false);
     }
 
+    public async Task<IReadOnlyList<Item>> ActiveSubtreeAsync(Guid rootId, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(limit);
+        await Pass();
+        return Collect(rootId, includeTrashed: false, limit);
+    }
+
     public int ChildFolderQueries { get; private set; }
 
     public int Calls => _calls;
@@ -131,7 +138,7 @@ internal sealed class FakeItemStore : IItemStore
         return Task.CompletedTask;
     }
 
-    private List<Item> Collect(Guid rootId, bool includeTrashed)
+    private List<Item> Collect(Guid rootId, bool includeTrashed, int limit = int.MaxValue)
     {
         List<Item> found = [];
         if (!_items.TryGetValue(rootId, out Item? root))
@@ -142,7 +149,7 @@ internal sealed class FakeItemStore : IItemStore
         Queue<Item> queue = [];
         queue.Enqueue(root);
         HashSet<Guid> seen = [rootId];
-        while (queue.TryDequeue(out Item? current))
+        while (found.Count < limit && queue.TryDequeue(out Item? current))
         {
             found.Add(current);
             foreach (Item child in _items.Values.Where(item => item.ParentId == current.Id && (includeTrashed || item.Trashed is null)))

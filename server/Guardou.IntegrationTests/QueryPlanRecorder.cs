@@ -8,6 +8,7 @@ internal sealed class QueryPlanRecorder : DbCommandInterceptor
     private const int DetailColumn = 3;
 
     private readonly List<IReadOnlyList<string>> _plans = [];
+    private readonly List<string> _statements = [];
 
     public IReadOnlyList<IReadOnlyList<string>> Plans
     {
@@ -20,11 +21,23 @@ internal sealed class QueryPlanRecorder : DbCommandInterceptor
         }
     }
 
+    public IReadOnlyList<string> Statements
+    {
+        get
+        {
+            lock (_plans)
+            {
+                return [.. _statements];
+            }
+        }
+    }
+
     public void Clear()
     {
         lock (_plans)
         {
             _plans.Clear();
+            _statements.Clear();
         }
     }
 
@@ -38,6 +51,7 @@ internal sealed class QueryPlanRecorder : DbCommandInterceptor
         lock (_plans)
         {
             _plans.Add(plan);
+            _statements.Add(command.CommandText);
         }
 
         return result;

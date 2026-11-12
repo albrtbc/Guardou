@@ -22,6 +22,8 @@ public interface IItemStore
 
     Task<IReadOnlyList<Item>> ActiveSubtreeAsync(Guid rootId, CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<Item>> ActiveSubtreeAsync(Guid rootId, int limit, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<Guid>> ChildFolderIdsAsync(IReadOnlyCollection<Guid> parentIds, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Item>> StarredAsync(string ownerId, CancellationToken cancellationToken);

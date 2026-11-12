@@ -60,6 +60,13 @@ internal sealed class EfItemStore(AppDbContext context, ItemIndexWriter index, S
         return LoadSubtreeAsync(rootId, includeTrashed: false, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Item>> ActiveSubtreeAsync(Guid rootId, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(limit);
+        List<Item> items = await ItemTreeQueries.Subtree(Items, rootId, includeTrashed: false, limit).ToListAsync(cancellationToken);
+        return ItemTreeQueries.BreadthFirst(rootId, items);
+    }
+
     private async Task<IReadOnlyList<Item>> LoadSubtreeAsync(Guid rootId, bool includeTrashed, CancellationToken cancellationToken)
     {
         List<Item> items = await ItemTreeQueries.Subtree(Items, rootId, includeTrashed).ToListAsync(cancellationToken);

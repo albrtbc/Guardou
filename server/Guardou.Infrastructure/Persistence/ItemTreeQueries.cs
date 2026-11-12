@@ -34,6 +34,22 @@ internal static class ItemTreeQueries
             """);
     }
 
+    public static IQueryable<Item> Subtree(DbSet<Item> items, Guid rootId, bool includeTrashed, int limit)
+    {
+        // The LIMIT sits inside the CTE: on the outer select it would not stop the recursion, which would still walk the whole subtree.
+        return items.FromSql($"""
+            WITH RECURSIVE "Tree"("Id") AS (
+                SELECT "Id" FROM "Items" WHERE "Id" = {rootId}
+                UNION
+                SELECT "Child"."Id" FROM "Tree"
+                JOIN "Items" AS "Child" ON "Child"."ParentId" = "Tree"."Id"
+                WHERE {includeTrashed} OR "Child"."Trashed" IS NULL
+                LIMIT {limit}
+            )
+            SELECT * FROM "Items" WHERE "Id" IN (SELECT "Id" FROM "Tree")
+            """);
+    }
+
     public static List<Item> BreadthFirst(Guid rootId, IReadOnlyList<Item> items)
     {
         ILookup<Guid?, Item> children = items.ToLookup(item => item.ParentId);

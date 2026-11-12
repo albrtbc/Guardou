@@ -23,8 +23,7 @@ internal sealed partial class ItemTree(IItemStore store, ILogger<ItemTree> logge
 
     public async Task<IReadOnlyList<TreeNode>> ActiveSubtreeAsync(Item item, string path, int limit, CancellationToken cancellationToken)
     {
-        IReadOnlyList<Item> items = await store.ActiveSubtreeAsync(item.Id, cancellationToken);
-        return Nodes(item, path, items.Take(limit + 1).ToList());
+        return Nodes(item, path, await store.ActiveSubtreeAsync(item.Id, limit + 1, cancellationToken));
     }
 
     public async Task<int> FolderHeightAsync(Item item, int maxLevels, CancellationToken cancellationToken)
