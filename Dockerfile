@@ -67,7 +67,7 @@ RUN ./configure \
     && make -j"$(nproc)" \
     && make install
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:486297ae006e95ee2ee3112a2c03e3d26e41fbbc64b7a29e28e7a18cc36b12bb
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:21c3f9798416cba4c0576a947c286231cb71ea2884896cb968253f5c9668f930
 # The base image is pinned by digest and the layers are cached, so this layer would never pick
 # up new package versions. CI passes a new value on every run to rebuild it.
 ARG APK_UPGRADE_RUN
