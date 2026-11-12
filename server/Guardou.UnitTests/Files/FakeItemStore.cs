@@ -27,10 +27,31 @@ internal sealed class FakeItemStore : IItemStore
         return _items.Values.Where(item => item.ParentId == parentId && item.Trashed is null).ToList();
     }
 
-    public async Task<IReadOnlyList<Item>> ChildrenWithTrashAsync(Guid parentId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Item>> AncestryAsync(string ownerId, Guid id, CancellationToken cancellationToken)
     {
         await Pass();
-        return _items.Values.Where(item => item.ParentId == parentId).ToList();
+        List<Item> chain = [];
+        HashSet<Guid> seen = [];
+        Guid? next = id;
+        while (next is { } current && seen.Add(current) && _items.GetValueOrDefault(current) is { } item && item.OwnerId == ownerId)
+        {
+            chain.Add(item);
+            next = item.ParentId;
+        }
+
+        return chain;
+    }
+
+    public async Task<IReadOnlyList<Item>> SubtreeAsync(Guid rootId, CancellationToken cancellationToken)
+    {
+        await Pass();
+        return Collect(rootId, includeTrashed: true);
+    }
+
+    public async Task<IReadOnlyList<Item>> ActiveSubtreeAsync(Guid rootId, CancellationToken cancellationToken)
+    {
+        await Pass();
+        return Collect(rootId, includeTrashed: false);
     }
 
     public int ChildFolderQueries { get; private set; }
@@ -108,6 +129,32 @@ internal sealed class FakeItemStore : IItemStore
     public Task SaveAsync(CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
+    }
+
+    private List<Item> Collect(Guid rootId, bool includeTrashed)
+    {
+        List<Item> found = [];
+        if (!_items.TryGetValue(rootId, out Item? root))
+        {
+            return found;
+        }
+
+        Queue<Item> queue = [];
+        queue.Enqueue(root);
+        HashSet<Guid> seen = [rootId];
+        while (queue.TryDequeue(out Item? current))
+        {
+            found.Add(current);
+            foreach (Item child in _items.Values.Where(item => item.ParentId == current.Id && (includeTrashed || item.Trashed is null)))
+            {
+                if (seen.Add(child.Id))
+                {
+                    queue.Enqueue(child);
+                }
+            }
+        }
+
+        return found;
     }
 
     private async Task Pass()

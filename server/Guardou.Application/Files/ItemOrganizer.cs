@@ -1,3 +1,4 @@
+using Guardou.Application.Persistence;
 using Guardou.Application.Previews;
 using Guardou.Application.Quotas;
 using Guardou.Domain.Files;
@@ -16,6 +17,7 @@ public sealed class ItemOrganizer
     private readonly PreviewTasks _previews;
     private readonly StorageReservations _reservations;
     private readonly ItemMoveLocks _moveLocks;
+    private readonly IWriteTransactions _transactions;
     private readonly TimeProvider _time;
 
     internal ItemOrganizer(
@@ -28,6 +30,7 @@ public sealed class ItemOrganizer
         PreviewTasks previews,
         StorageReservations reservations,
         ItemMoveLocks moveLocks,
+        IWriteTransactions transactions,
         TimeProvider time)
     {
         _store = store;
@@ -39,6 +42,7 @@ public sealed class ItemOrganizer
         _previews = previews;
         _reservations = reservations;
         _moveLocks = moveLocks;
+        _transactions = transactions;
         _time = time;
     }
 
@@ -51,8 +55,9 @@ public sealed class ItemOrganizer
         {
             ItemPath parent = await _items.FindActiveFolderAsync(ownerId, parentId, cancellationToken);
             FolderDepth.EnsureWithin(parent.Ancestors.Count + 1);
-            await _placement.ResolveNameAsync(parent.Item, ItemPlacement.ValidName(name), ConflictPolicy.Fail, null, cancellationToken);
-            folder = Item.CreateFolder(parent.Item, name, ownerId, _time.GetUtcNow());
+            string validName = ItemPlacement.ValidName(name);
+            await _placement.ResolveNameAsync(parent.Item, validName, ConflictPolicy.Fail, null, cancellationToken);
+            folder = Item.CreateFolder(parent.Item, validName, ownerId, _time.GetUtcNow());
             _store.Add(folder);
             await _store.SaveAsync(cancellationToken);
         }
@@ -69,10 +74,11 @@ public sealed class ItemOrganizer
         ItemPath path = await _items.FindModifiableAsync(ownerId, id, cancellationToken);
         Item item = path.Item;
         Item parent = path.Ancestors[^1];
-        if (item.Name != ItemPlacement.ValidName(name))
+        string validName = ItemPlacement.ValidName(name);
+        if (item.Name != validName)
         {
-            await _placement.ResolveNameAsync(parent, name, ConflictPolicy.Fail, path, cancellationToken);
-            item.Rename(name, _time.GetUtcNow());
+            await _placement.ResolveNameAsync(parent, validName, ConflictPolicy.Fail, path, cancellationToken);
+            item.Rename(validName, _time.GetUtcNow());
             await _store.SaveAsync(cancellationToken);
         }
 
@@ -86,19 +92,24 @@ public sealed class ItemOrganizer
         ConflictPolicy conflict,
         CancellationToken cancellationToken)
     {
+        Item? item;
         SemaphoreSlim ownerLock = _moveLocks.For(ownerId);
         await ownerLock.WaitAsync(cancellationToken);
         try
         {
-            return await MoveLockedAsync(ownerId, id, destinationId, conflict, cancellationToken);
+            item = await _transactions.RunAsync(
+                () => PlaceMovedAsync(ownerId, id, destinationId, conflict, cancellationToken),
+                cancellationToken);
         }
         finally
         {
             ownerLock.Release();
         }
+
+        return item is null ? null : await _entries.CreateAsync(item, ownerId, cancellationToken);
     }
 
-    private async Task<ItemEntry?> MoveLockedAsync(
+    private async Task<Item?> PlaceMovedAsync(
         string ownerId,
         string id,
         string destinationId,
@@ -115,7 +126,7 @@ public sealed class ItemOrganizer
 
         if (item.ParentId == destination.Item.Id)
         {
-            return await _entries.CreateAsync(item, ownerId, cancellationToken);
+            return item;
         }
 
         int destinationDepth = destination.Ancestors.Count;
@@ -133,7 +144,7 @@ public sealed class ItemOrganizer
 
         item.MoveTo(destination.Item, name);
         await _store.SaveAsync(cancellationToken);
-        return await _entries.CreateAsync(item, ownerId, cancellationToken);
+        return item;
     }
 
     public async Task<ItemEntry?> CopyAsync(
@@ -182,22 +193,16 @@ public sealed class ItemOrganizer
         List<string> written = [];
         CopyContext context = new(createdBy, _time.GetUtcNow(), written);
         List<Item> copies = [];
+        Dictionary<Guid, Item> copiesBySource = [];
         try
         {
-            Item copy = await CopyItemAsync(source, destination, name, context, cancellationToken);
-            copies.Add(copy);
-            Queue<(Item Source, Item Copy)> folders = new([(source, copy)]);
-            while (folders.TryDequeue(out (Item Source, Item Copy) folder))
+            foreach (Item item in await _store.ActiveSubtreeAsync(source.Id, cancellationToken))
             {
-                foreach (Item child in await _store.ChildrenAsync(folder.Source.Id, cancellationToken))
-                {
-                    Item childCopy = await CopyItemAsync(child, folder.Copy, child.Name, context, cancellationToken);
-                    copies.Add(childCopy);
-                    if (child.IsFolder)
-                    {
-                        folders.Enqueue((child, childCopy));
-                    }
-                }
+                Item copy = item.Id == source.Id || item.ParentId is not { } parentId
+                    ? await CopyItemAsync(item, destination, name, context, cancellationToken)
+                    : await CopyItemAsync(item, copiesBySource[parentId], item.Name, context, cancellationToken);
+                copiesBySource[item.Id] = copy;
+                copies.Add(copy);
             }
 
             await _store.SaveAsync(cancellationToken);

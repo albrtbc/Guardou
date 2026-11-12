@@ -25,7 +25,12 @@ internal sealed partial class OwnedItems(IItemStore store, ILogger<OwnedItems> l
 
     public async Task<ItemPath?> TryFindActiveAsync(string ownerId, Guid id, CancellationToken cancellationToken)
     {
-        Item? item = await store.FindAsync(ownerId, id, cancellationToken);
+        Dictionary<Guid, Item> chain = (await store.AncestryAsync(ownerId, id, cancellationToken)).ToDictionary(item => item.Id);
+        if (!chain.TryGetValue(id, out Item? item))
+        {
+            return null;
+        }
+
         List<Item> ancestors = [];
         HashSet<Guid> visited = [];
         Item? current = item;
@@ -37,14 +42,14 @@ internal sealed partial class OwnedItems(IItemStore store, ILogger<OwnedItems> l
                 return null;
             }
 
-            current = await store.FindAsync(ownerId, parentId, cancellationToken);
+            current = chain.GetValueOrDefault(parentId);
             if (current is not null)
             {
                 ancestors.Insert(0, current);
             }
         }
 
-        return item is not null && current is { Trashed: null } ? new ItemPath(item, ancestors) : null;
+        return current is { Trashed: null } ? new ItemPath(item, ancestors) : null;
     }
 
     public async Task<ItemPath> FindActiveFolderAsync(string ownerId, string reference, CancellationToken cancellationToken)

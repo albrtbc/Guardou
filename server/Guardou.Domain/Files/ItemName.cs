@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Guardou.Domain.Files;
 
 public static class ItemName
@@ -14,6 +16,18 @@ public static class ItemName
             && !ReservedNames.Contains(name)
             && name.IndexOfAny(ForbiddenCharacters) < 0
             && !name.Any(char.IsControl);
+    }
+
+    public static string? TryNormalize(string name)
+    {
+        try
+        {
+            return name.Normalize(NormalizationForm.FormC);
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
     }
 
     public static string Numbered(string name, int number)

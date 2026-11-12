@@ -168,28 +168,29 @@ internal sealed partial class ItemIndexWriter(
 
     private async Task<List<IndexNode>> LoadSubtreeAsync(Item root, string rootPath, CancellationToken cancellationToken)
     {
-        List<IndexNode> nodes = [new IndexNode(root, rootPath)];
-        HashSet<Guid> visited = [root.Id];
-        List<IndexNode> level = nodes;
-        bool broken = false;
-        for (int depth = 1; level.Where(node => node.Item.IsFolder).ToDictionary(node => node.Item.Id, node => node.Path) is { Count: > 0 } folders; depth++)
+        List<Item> items = await ItemTreeQueries.Subtree(Items, root.Id, includeTrashed: false).AsNoTracking().ToListAsync(cancellationToken);
+        Dictionary<Guid, (string Path, int Depth)> placed = [];
+        List<IndexNode> nodes = [];
+        bool broken = root.ParentId is { } rootParentId && items.Any(item => item.Id == rootParentId);
+        foreach (Item item in ItemTreeQueries.BreadthFirst(root.Id, items))
         {
-            if (depth > TreeLimits.MaximumWalkDepth)
+            (string Path, int Depth) position;
+            if (item.Id == root.Id)
+            {
+                position = (rootPath, 0);
+            }
+            else if (item.ParentId is { } parentId && placed.TryGetValue(parentId, out (string Path, int Depth) parent) && parent.Depth < TreeLimits.MaximumWalkDepth)
+            {
+                position = (IndexPath.Of(parent.Path, item.Id), parent.Depth + 1);
+            }
+            else
             {
                 broken = true;
-                break;
+                continue;
             }
 
-            List<Guid?> parentIds = folders.Keys.Select(id => (Guid?)id).ToList();
-            List<Item> children = await Items.AsNoTracking()
-                .Where(item => parentIds.Contains(item.ParentId) && item.Trashed == null)
-                .ToListAsync(cancellationToken);
-            List<Item> unvisited = children.Where(child => visited.Add(child.Id)).ToList();
-            broken |= unvisited.Count < children.Count;
-            level = unvisited
-                .Select(child => new IndexNode(child, IndexPath.Of(folders.GetValueOrDefault(child.ParentId ?? Guid.Empty), child.Id)))
-                .ToList();
-            nodes.AddRange(level);
+            placed[item.Id] = position;
+            nodes.Add(new IndexNode(item, position.Path));
         }
 
         if (broken)

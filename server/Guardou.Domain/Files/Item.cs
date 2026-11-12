@@ -88,6 +88,11 @@ public sealed class Item
         Modified = now;
     }
 
+    public void ReplaceName(string name)
+    {
+        Name = name;
+    }
+
     public void MoveTo(Item parent, string name)
     {
         ParentId = parent.Id;

@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
+import '../../api/generated/models/share_link.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 enum ShareAccess {
@@ -11,7 +12,7 @@ enum ShareAccess {
 
   final IconData icon;
 
-  static ShareAccess of(String? link) => link == null ? restricted : anyoneWithLink;
+  static ShareAccess of(ShareLink? link) => link == null ? restricted : anyoneWithLink;
 
   String label(AppLocalizations l10n) => switch (this) {
     restricted => l10n.shareAccessRestricted,

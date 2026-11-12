@@ -14,6 +14,7 @@ internal sealed class ShareConfiguration : IEntityTypeConfiguration<Share>
         builder.HasKey(share => share.Id);
         builder.Property(share => share.Token).HasMaxLength(ShareToken.Length);
         builder.Property(share => share.Created).HasConversion<DateTimeOffsetToBinaryConverter>();
+        builder.Property(share => share.Expires).HasConversion<DateTimeOffsetToBinaryConverter>();
 
         builder.HasOne<Item>().WithMany().HasForeignKey(share => share.ItemId).OnDelete(DeleteBehavior.Cascade);
 

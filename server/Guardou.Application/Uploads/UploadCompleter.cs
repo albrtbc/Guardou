@@ -119,7 +119,7 @@ public sealed class UploadCompleter
             Item? existing = await _store.FindChildAsync(folder.Id, name, cancellationToken);
             if (existing is { IsFolder: false })
             {
-                throw new ItemConflictException(name);
+                throw ItemConflictException.ForName(name);
             }
 
             if (existing is null)

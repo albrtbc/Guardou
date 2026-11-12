@@ -1,6 +1,7 @@
 using Guardou.Application.Files;
 using Guardou.Domain.Files;
 using Guardou.Infrastructure.Indexing;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -8,6 +9,8 @@ namespace Guardou.Infrastructure.Persistence;
 
 internal sealed class EfItemStore(AppDbContext context, ItemIndexWriter index, StorageUsageCounter usage) : IItemStore
 {
+    private const int UniqueConstraintFailed = 2067;
+
     private DbSet<Item> Items => context.Set<Item>();
 
     public Task<Item?> FindAsync(string ownerId, Guid id, CancellationToken cancellationToken)
@@ -42,9 +45,25 @@ internal sealed class EfItemStore(AppDbContext context, ItemIndexWriter index, S
         return await Items.Where(item => item.ParentId == parentId && item.Trashed == null).ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Item>> ChildrenWithTrashAsync(Guid parentId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Item>> AncestryAsync(string ownerId, Guid id, CancellationToken cancellationToken)
     {
-        return await Items.Where(item => item.ParentId == parentId).ToListAsync(cancellationToken);
+        return await ItemTreeQueries.Ancestry(Items, ownerId, id).ToListAsync(cancellationToken);
+    }
+
+    public Task<IReadOnlyList<Item>> SubtreeAsync(Guid rootId, CancellationToken cancellationToken)
+    {
+        return LoadSubtreeAsync(rootId, includeTrashed: true, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<Item>> ActiveSubtreeAsync(Guid rootId, CancellationToken cancellationToken)
+    {
+        return LoadSubtreeAsync(rootId, includeTrashed: false, cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<Item>> LoadSubtreeAsync(Guid rootId, bool includeTrashed, CancellationToken cancellationToken)
+    {
+        List<Item> items = await ItemTreeQueries.Subtree(Items, rootId, includeTrashed).ToListAsync(cancellationToken);
+        return ItemTreeQueries.BreadthFirst(rootId, items);
     }
 
     public async Task<IReadOnlyList<Guid>> ChildFolderIdsAsync(IReadOnlyCollection<Guid> parentIds, CancellationToken cancellationToken)
@@ -90,15 +109,17 @@ internal sealed class EfItemStore(AppDbContext context, ItemIndexWriter index, S
         CancellationToken cancellationToken)
     {
         IQueryable<ItemOpen> opens = context.Set<ItemOpen>().Where(open => open.UserId == userId);
-        return await Items
+        IQueryable<Item> created = Items.Where(item => item.CreatedBy == userId && item.Kind == kind);
+        IQueryable<Item> opened = opens.Join(Items, open => open.ItemId, item => item.Id, (_, item) => item).Where(item => item.Kind == kind);
+        return await created
+            .Union(opened)
             .AsNoTracking()
-            .Where(item => item.Kind == kind && item.ParentId != null && item.Trashed == null)
+            .Where(item => item.ParentId != null && item.Trashed == null)
             .Select(item => new
             {
                 Item = item,
                 Opened = opens.Where(open => open.ItemId == item.Id).Select(open => (DateTimeOffset?)open.Opened).FirstOrDefault(),
             })
-            .Where(candidate => candidate.Item.CreatedBy == userId || candidate.Opened != null)
             .OrderByDescending(candidate => candidate.Opened > candidate.Item.Created ? candidate.Opened : candidate.Item.Created)
             .ThenByDescending(candidate => candidate.Item.Id)
             .Skip(skip)
@@ -124,6 +145,22 @@ internal sealed class EfItemStore(AppDbContext context, ItemIndexWriter index, S
     }
 
     public async Task SaveAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ItemChangedException();
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is SqliteException { SqliteExtendedErrorCode: UniqueConstraintFailed })
+        {
+            throw new ItemConflictException("An item with the same name already exists in the folder.");
+        }
+    }
+
+    private async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         IReadOnlyDictionary<string, long> changes = usage.PendingChanges();
         if (changes.Count == 0)

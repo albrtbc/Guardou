@@ -64,7 +64,9 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<IUserAccountStore, IdentityUserAccountStore>();
         services.AddScoped<IDatabaseMigrator, DatabaseMigrator>();
+        services.AddScoped<ItemNameNormalizer>();
         services.AddScoped<IItemStore, EfItemStore>();
+        services.AddScoped<IWriteTransactions, EfWriteTransactions>();
         services.AddScoped<StorageUsageCounter>();
         services.AddScoped<IStorageQuotaStore, EfStorageQuotaStore>();
         services.AddSingleton<IStorageCapacity, StorageCapacity>();
@@ -98,7 +100,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IImageSource, VideoImageSource>();
         services.AddSingleton<IPreviewRenderer, VipsPreviewRenderer>();
         services.AddSingleton<IPreviewCache, FilePreviewCache>();
-        services.AddHttpClient<ProfilePictureDownloader>(client => client.Timeout = ProfilePictureDownloader.Timeout);
+        services.AddHttpClient<ProfilePictureDownloader>(client => client.Timeout = ProfilePictureDownloader.Timeout)
+            .ConfigurePrimaryHttpMessageHandler(PublicAddressConnector.CreateHandler);
         services.AddSingleton<IProfilePictureStore, FileProfilePictureStore>();
         return services;
     }

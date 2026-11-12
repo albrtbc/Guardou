@@ -484,6 +484,25 @@
   "shareLink": "Link",
   "shareCopyLink": "Copy link",
   "shareLinkCopied": "Link copied",
+  "shareNoExpiry": "The link does not expire.",
+  "shareExpires": "The link expires after {date}.",
+  "@shareExpires": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shareExpired": "The link expired on {date}.",
+  "@shareExpired": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shareSetExpiry": "Set expiry date",
+  "shareRemoveExpiry": "Remove the expiry date",
   "done": "Done",
   "sharedLinkJoin": "Add to Shared with me",
   "sourceCodeLink": "Source code",

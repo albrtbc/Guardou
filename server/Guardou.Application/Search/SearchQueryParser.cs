@@ -19,7 +19,7 @@ internal sealed class SearchQueryParser(TimeProvider time)
         Period period = new(null, null);
         SizeRange size = new(null, null);
         bool starred = false;
-        foreach (SearchToken token in SearchTokenizer.Tokenize(text ?? string.Empty))
+        foreach (SearchToken token in SearchTokenizer.Tokenize(ItemName.TryNormalize(text ?? string.Empty) ?? string.Empty))
         {
             (string key, string value) = Split(token);
             switch (key)

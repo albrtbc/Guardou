@@ -52,7 +52,7 @@ public sealed class UploadSessions
                 case ConflictPolicy.Skip:
                     return null;
                 case ConflictPolicy.Fail:
-                    throw new ItemConflictException(destination.Name);
+                    throw ItemConflictException.ForName(destination.Name);
             }
         }
 
@@ -143,7 +143,7 @@ public sealed class UploadSessions
 
             if (!current.IsFolder)
             {
-                throw new ItemConflictException(name);
+                throw ItemConflictException.ForName(name);
             }
         }
 

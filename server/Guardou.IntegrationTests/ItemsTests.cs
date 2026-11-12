@@ -188,6 +188,24 @@ public sealed class ItemsTests : SignedInTests
     }
 
     [Fact]
+    public async Task ConcurrentMovesDoNotMakeAParentCycle()
+    {
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            ItemEntry first = await Client.CreateFolderEntryAsync(ItemsApi.Root, $"first {attempt}");
+            ItemEntry second = await Client.CreateFolderEntryAsync(ItemsApi.Root, $"second {attempt}");
+
+            HttpResponseMessage[] moves = await Task.WhenAll(
+                Client.TransferAsync("move", first.Id, second.Id),
+                Client.TransferAsync("move", second.Id, first.Id));
+
+            Assert.Single(moves, response => response.IsSuccessStatusCode);
+            IEnumerable<string> rootNames = (await Client.GetItemAsync(ItemsApi.Root)).Names();
+            Assert.Single(rootNames, name => name == first.Name || name == second.Name);
+        }
+    }
+
+    [Fact]
     public async Task ResolvesMoveConflicts()
     {
         ItemEntry docs = await Client.CreateFolderEntryAsync(ItemsApi.Root, "docs");

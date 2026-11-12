@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
 import '../../api/generated/models/item_entry.dart';
+import '../../api/generated/models/share_link.dart';
 import '../../app/theme/app_tokens.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'share_access.dart';
 import 'share_controller.dart';
+import 'share_expiry.dart';
 import 'share_recipients.dart';
 
 Future<void> showShareDialog(BuildContext context, ItemEntry entry) => showDialog<void>(
@@ -38,7 +40,7 @@ class ShareDialog extends ConsumerWidget {
     final spacing = AppTokens.of(context).spacing;
     final provider = shareControllerProvider(entry.id);
     final state = ref.watch(provider);
-    final link = state is AsyncData<String?> ? state.value : null;
+    final link = state is AsyncData<ShareLink?> ? state.value : null;
 
     return AlertDialog(
       title: Text(l10n.shareTitle(entry.name), overflow: TextOverflow.ellipsis),
@@ -73,7 +75,11 @@ class ShareDialog extends ConsumerWidget {
                 SizedBox(height: spacing),
                 InputDecorator(
                   decoration: InputDecoration(labelText: l10n.shareLink),
-                  child: SelectableText(link, maxLines: 1),
+                  child: SelectableText(link.url, maxLines: 1),
+                ),
+                ShareExpiryRow(
+                  expires: link.expires,
+                  onChanged: (expires) => ref.read(provider.notifier).changeExpiry(expires),
                 ),
               ],
             ],
@@ -83,7 +89,7 @@ class ShareDialog extends ConsumerWidget {
       actions: [
         if (link != null)
           OutlinedButton.icon(
-            onPressed: () => _copy(context, link),
+            onPressed: () => _copy(context, link.url),
             icon: const Icon(FluentIcons.link_24_regular),
             label: Text(l10n.shareCopyLink),
           ),

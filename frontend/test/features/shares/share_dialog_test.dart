@@ -1,6 +1,8 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:guardou/api/generated/models/item_kind.dart';
+import 'package:guardou/api/generated/models/share_link.dart';
 import 'package:guardou/api/generated/models/user_summary.dart';
 import 'package:guardou/features/files/item_action.dart';
 import 'package:guardou/features/shares/share_dialog.dart';
@@ -9,7 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../helpers/test_app.dart';
 
 void main() {
-  const link = 'http://localhost/s/AAAAAAAAAAAAAAAAAAAAAA';
+  const link = ShareLink(url: 'http://localhost/s/AAAAAAAAAAAAAAAAAAAAAA', expires: null);
   const portrait = Size(390, 844);
   final file = testEntry('report.txt', id: 'file-id');
   const bob = UserSummary(
@@ -102,7 +104,7 @@ void main() {
     await choose(tester, 'Restricted', 'Anyone with the link');
 
     verify(() => shares.share(file.id)).called(1);
-    expect(find.text(link), findsOneWidget);
+    expect(find.text(link.url), findsOneWidget);
     expect(find.text('Copy link'), findsOneWidget);
   });
 
@@ -113,7 +115,40 @@ void main() {
     await choose(tester, 'Anyone with the link', 'Restricted');
 
     verify(() => shares.stopSharing(file.id)).called(1);
-    expect(find.text(link), findsNothing);
+    expect(find.text(link.url), findsNothing);
+  });
+
+  testWidgets('sets the expiry date of the link', (tester) async {
+    final now = DateTime(2026, 11, 11, 10);
+    final expires = DateTime(2026, 11, 18, 23, 59, 59);
+    when(() => shares.link(file.id)).thenAnswer((_) async => link);
+    when(() => shares.changeExpiry(file.id, expires)).thenAnswer((_) async => link.copyWith(expires: expires.toUtc()));
+
+    await withClock(Clock.fixed(now), () async {
+      await pumpDialog(tester);
+      expect(find.text('The link does not expire.'), findsOneWidget);
+      await tester.tap(find.byTooltip('Set expiry date'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+    });
+
+    verify(() => shares.changeExpiry(file.id, expires)).called(1);
+    expect(find.text('The link expires after Nov 18, 2026.'), findsOneWidget);
+  });
+
+  testWidgets('shows an expired link and removes the expiry date', (tester) async {
+    final expired = link.copyWith(expires: DateTime.utc(2020, 1, 2, 12));
+    when(() => shares.link(file.id)).thenAnswer((_) async => expired);
+    when(() => shares.changeExpiry(file.id, null)).thenAnswer((_) async => link);
+
+    await pumpDialog(tester, size: portrait);
+    expect(find.text('The link expired on Jan 2, 2020.'), findsOneWidget);
+    await tester.tap(find.byTooltip('Remove the expiry date'));
+    await tester.pumpAndSettle();
+
+    verify(() => shares.changeExpiry(file.id, null)).called(1);
+    expect(find.text('The link does not expire.'), findsOneWidget);
   });
 
   test('enables sharing only for one item that the user can modify', () {

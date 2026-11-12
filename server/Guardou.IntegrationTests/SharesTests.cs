@@ -332,6 +332,67 @@ public sealed class SharesTests : SignedInTests
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task ExpiresTheLinkAtTheExpiryDate()
+    {
+        ItemEntry file = await Client.UploadEntryAsync(ItemsApi.Root, "report.txt", "a");
+        string token = TokenOf(await ShareAsync(file.Id));
+        DateTimeOffset now = Factory.Time.GetUtcNow();
+        DateTimeOffset expires = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, TimeSpan.Zero).AddDays(1);
+        using HttpClient anonymous = Factory.CreateClient();
+        using HttpClient bob = await SignInAsBobAsync();
+
+        ShareLink changed = await ReadLinkAsync(await ChangeExpiryAsync(file.Id, expires));
+        HttpResponseMessage before = await anonymous.GetAsync($"/api/shares/{token}", CancellationToken);
+        Factory.Time.Advance(TimeSpan.FromDays(2));
+        HttpResponseMessage details = await anonymous.GetAsync($"/api/shares/{token}", CancellationToken);
+        HttpResponseMessage download = await anonymous.GetAsync($"/api/shares/{token}/items/{file.Id}/download", CancellationToken);
+        await bob.RefreshAntiforgeryTokenAsync();
+        HttpResponseMessage join = await bob.PostAsync($"/api/shares/{token}/join", null, CancellationToken);
+
+        Assert.Equal(expires, changed.Expires);
+        Assert.Equal(expires, (await GetShareAsync(file.Id)).Expires);
+        Assert.Equal(HttpStatusCode.OK, before.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, details.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, download.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, join.StatusCode);
+    }
+
+    [Fact]
+    public async Task RemovesTheExpiryDate()
+    {
+        ItemEntry file = await Client.UploadEntryAsync(ItemsApi.Root, "report.txt", "a");
+        string token = TokenOf(await ShareAsync(file.Id));
+        await ChangeExpiryAsync(file.Id, Factory.Time.GetUtcNow().AddDays(1));
+
+        ShareLink changed = await ReadLinkAsync(await ChangeExpiryAsync(file.Id, null));
+        Factory.Time.Advance(TimeSpan.FromDays(2));
+        using HttpClient anonymous = Factory.CreateClient();
+        HttpResponseMessage details = await anonymous.GetAsync($"/api/shares/{token}", CancellationToken);
+
+        Assert.Null(changed.Expires);
+        Assert.Equal(HttpStatusCode.OK, details.StatusCode);
+    }
+
+    [Fact]
+    public async Task RefusesAnExpiryDateInThePastOrWithoutALink()
+    {
+        ItemEntry file = await Client.UploadEntryAsync(ItemsApi.Root, "report.txt", "a");
+        DateTimeOffset tomorrow = Factory.Time.GetUtcNow().AddDays(1);
+
+        HttpResponseMessage notShared = await ChangeExpiryAsync(file.Id, tomorrow);
+        await ShareAsync(file.Id);
+        HttpResponseMessage past = await ChangeExpiryAsync(file.Id, Factory.Time.GetUtcNow().AddMinutes(-1));
+
+        Assert.Equal(HttpStatusCode.NotFound, notShared.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, past.StatusCode);
+    }
+
+    private Task<HttpResponseMessage> ChangeExpiryAsync(string id, DateTimeOffset? expires)
+    {
+        return Client.PutAsJsonAsync($"/api/items/{id}/share/expiry", new ShareExpiry(expires), HttpClientExtensions.JsonOptions, CancellationToken);
+    }
+
     private static void AssertNoStore(HttpResponseMessage response)
     {
         Assert.True(response.Headers.CacheControl?.Private);

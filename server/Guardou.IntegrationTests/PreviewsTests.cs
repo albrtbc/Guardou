@@ -53,6 +53,7 @@ public sealed class PreviewsTests : SignedInTests
     {
         ItemEntry image = await Client.UploadImageAsync("wide.png");
         await Client.WaitForPreviewAsync(image.Id);
+        await Client.WaitForIdleQueuesAsync();
         Directory.Delete(Factory.ThumbsDirectory, recursive: true);
 
         HttpResponseMessage pending = await Client.GetPreviewAsync(image.Id);

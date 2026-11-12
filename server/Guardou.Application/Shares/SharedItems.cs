@@ -19,6 +19,7 @@ public sealed class SharedItems
     private readonly ItemPreviews _previews;
     private readonly IProfilePictureStore _pictures;
     private readonly AuditLog _audit;
+    private readonly TimeProvider _time;
 
     internal SharedItems(
         IShareStore shares,
@@ -29,7 +30,8 @@ public sealed class SharedItems
         ItemDownloads downloads,
         ItemPreviews previews,
         IProfilePictureStore pictures,
-        AuditLog audit)
+        AuditLog audit,
+        TimeProvider time)
     {
         _shares = shares;
         _store = store;
@@ -40,6 +42,7 @@ public sealed class SharedItems
         _previews = previews;
         _pictures = pictures;
         _audit = audit;
+        _time = time;
     }
 
     public async Task<ItemEntry> GetAsync(string token, CancellationToken cancellationToken)
@@ -88,7 +91,7 @@ public sealed class SharedItems
     {
         SharedAccess shared = await FindAsync(token, id, cancellationToken);
         _audit.SharedItemAccessed(shared.ShareId, shared.Access.Item.Id, ShareAccessKind.Preview);
-        return await _previews.OpenAsync(shared.Access.Item.OwnerId, id, size, cancellationToken);
+        return await _previews.OpenAnonymousAsync(shared.Access.Item.OwnerId, id, size, cancellationToken);
     }
 
     public async Task<ProfilePicture?> OpenCreatorPictureAsync(string token, string id, CancellationToken cancellationToken)
@@ -121,7 +124,12 @@ public sealed class SharedItems
 
     private async Task<(Share Share, Item Root)> FindShareAsync(string token, CancellationToken cancellationToken)
     {
-        Share share = (ShareToken.IsValid(token) ? await _shares.FindByTokenAsync(token, cancellationToken) : null) ?? throw NotFound();
+        Share? share = ShareToken.IsValid(token) ? await _shares.FindByTokenAsync(token, cancellationToken) : null;
+        if (share is null || !share.IsActive(_time.GetUtcNow()))
+        {
+            throw NotFound();
+        }
+
         Item item = await _store.FindAnyAsync(share.ItemId, cancellationToken) ?? throw NotFound();
         ItemPath? path = await _items.TryFindActiveAsync(item.OwnerId, item.Id, cancellationToken);
         return (share, path?.Item ?? throw NotFound());

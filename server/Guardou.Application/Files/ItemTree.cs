@@ -7,18 +7,24 @@ internal sealed partial class ItemTree(IItemStore store, ILogger<ItemTree> logge
 {
     public async Task<IReadOnlyList<Item>> SubtreeAsync(Item item, CancellationToken cancellationToken)
     {
-        List<TreeNode> nodes = await WalkAsync(item, path: null, includeTrashed: true, limit: int.MaxValue, maxDepth: int.MaxValue, cancellationToken);
-        return nodes.Select(node => node.Item).ToList();
+        IReadOnlyList<Item> items = await store.SubtreeAsync(item.Id, cancellationToken);
+        if (LoopsBack(item, items))
+        {
+            LogBrokenTree(item.Id);
+        }
+
+        return items;
     }
 
     public async Task<IReadOnlyList<TreeNode>> ActiveSubtreeAsync(Item item, string path, CancellationToken cancellationToken)
     {
-        return await WalkAsync(item, path, includeTrashed: false, limit: int.MaxValue, TreeLimits.MaximumWalkDepth, cancellationToken);
+        return Nodes(item, path, await store.ActiveSubtreeAsync(item.Id, cancellationToken));
     }
 
     public async Task<IReadOnlyList<TreeNode>> ActiveSubtreeAsync(Item item, string path, int limit, CancellationToken cancellationToken)
     {
-        return await WalkAsync(item, path, includeTrashed: false, limit, TreeLimits.MaximumWalkDepth, cancellationToken);
+        IReadOnlyList<Item> items = await store.ActiveSubtreeAsync(item.Id, cancellationToken);
+        return Nodes(item, path, items.Take(limit + 1).ToList());
     }
 
     public async Task<int> FolderHeightAsync(Item item, int maxLevels, CancellationToken cancellationToken)
@@ -50,40 +56,55 @@ internal sealed partial class ItemTree(IItemStore store, ILogger<ItemTree> logge
         return nodes.Where(node => node.Item.IsFolder).Select(node => node.Depth).DefaultIfEmpty(-1).Max();
     }
 
-    private async Task<List<TreeNode>> WalkAsync(Item root, string? path, bool includeTrashed, int limit, int maxDepth, CancellationToken cancellationToken)
+    private static bool LoopsBack(Item root, IReadOnlyList<Item> items)
     {
-        List<TreeNode> nodes = [new TreeNode(root, path ?? string.Empty, 0)];
-        HashSet<Guid> visited = [root.Id];
-        bool reported = false;
-        for (int index = 0; index < nodes.Count && nodes.Count <= limit; index++)
+        return root.ParentId is { } parentId && items.Any(item => item.Id == parentId);
+    }
+
+    private List<TreeNode> Nodes(Item root, string path, IReadOnlyList<Item> items)
+    {
+        Dictionary<Guid, TreeNode> placed = [];
+        Dictionary<Guid, CaseInsensitiveNames> names = [];
+        List<TreeNode> nodes = [];
+        bool broken = LoopsBack(root, items);
+        foreach (Item current in items)
         {
-            TreeNode node = nodes[index];
-            if (!node.Item.IsFolder)
+            TreeNode node;
+            if (current.Id == root.Id)
             {
+                node = new TreeNode(current, path, 0);
+            }
+            else if (current.ParentId is { } parentId && placed.TryGetValue(parentId, out TreeNode? parent) && parent.Depth < TreeLimits.MaximumWalkDepth)
+            {
+                node = new TreeNode(current, $"{parent.Path}/{NamesIn(names, parentId).Claim(current.Name)}", parent.Depth + 1);
+            }
+            else
+            {
+                broken = true;
                 continue;
             }
 
-            IReadOnlyList<Item> children = includeTrashed
-                ? await store.ChildrenWithTrashAsync(node.Item.Id, cancellationToken)
-                : await store.ChildrenAsync(node.Item.Id, cancellationToken);
-            foreach (Item child in children)
-            {
-                if (node.Depth >= maxDepth || !visited.Add(child.Id))
-                {
-                    if (!reported)
-                    {
-                        LogBrokenTree(child.Id);
-                        reported = true;
-                    }
+            placed[current.Id] = node;
+            nodes.Add(node);
+        }
 
-                    continue;
-                }
-
-                nodes.Add(new TreeNode(child, path is null ? string.Empty : $"{node.Path}/{child.Name}", node.Depth + 1));
-            }
+        if (broken)
+        {
+            LogBrokenTree(root.Id);
         }
 
         return nodes;
+    }
+
+    private static CaseInsensitiveNames NamesIn(Dictionary<Guid, CaseInsensitiveNames> names, Guid parentId)
+    {
+        if (!names.TryGetValue(parentId, out CaseInsensitiveNames? folder))
+        {
+            folder = new CaseInsensitiveNames();
+            names[parentId] = folder;
+        }
+
+        return folder;
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Item {ItemId} sits in a folder tree that loops back on itself or is deeper than the limit, so the walk skips it.")]

@@ -18,8 +18,20 @@ public sealed class Share
 
     public DateTimeOffset Created { get; private set; }
 
+    public DateTimeOffset? Expires { get; private set; }
+
     public static Share Create(Guid itemId, DateTimeOffset now)
     {
         return new Share(Guid.CreateVersion7(now), itemId, ShareToken.Create(), now);
+    }
+
+    public bool IsActive(DateTimeOffset now)
+    {
+        return Expires is null || Expires > now;
+    }
+
+    public void ExpireAt(DateTimeOffset? expires)
+    {
+        Expires = expires;
     }
 }

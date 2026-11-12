@@ -48,6 +48,26 @@ public sealed class ItemSharing
         return await LinkOfAsync(share, requestOrigin, cancellationToken);
     }
 
+    public async Task<ShareLink> ChangeExpiryAsync(
+        string ownerId,
+        string id,
+        ShareExpiry expiry,
+        string requestOrigin,
+        CancellationToken cancellationToken)
+    {
+        if (expiry.Expires <= _time.GetUtcNow())
+        {
+            throw new InvalidItemRequestException("The expiry date must be in the future.");
+        }
+
+        Item item = await _items.FindShareableAsync(ownerId, id, cancellationToken);
+        Share share = await _shares.FindByItemAsync(item.Id, cancellationToken)
+            ?? throw new ShareNotFoundException($"The item '{id}' is not shared.");
+        share.ExpireAt(expiry.Expires);
+        await _shares.SaveAsync(cancellationToken);
+        return await LinkOfAsync(share, requestOrigin, cancellationToken);
+    }
+
     public async Task StopSharingAsync(string ownerId, string id, CancellationToken cancellationToken)
     {
         Item item = await _items.FindShareableAsync(ownerId, id, cancellationToken);
@@ -62,6 +82,6 @@ public sealed class ItemSharing
     private async Task<ShareLink> LinkOfAsync(Share share, string requestOrigin, CancellationToken cancellationToken)
     {
         string origin = await _server.PublicOriginAsync(requestOrigin, cancellationToken);
-        return new ShareLink(origin + LinkPath + share.Token);
+        return new ShareLink(origin + LinkPath + share.Token, share.Expires);
     }
 }

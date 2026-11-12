@@ -87,7 +87,7 @@ public sealed class ItemTreeTests
         IReadOnlyList<TreeNode> limited = await _walker.ActiveSubtreeAsync(docs, "docs", limit: 5, CancellationToken);
         IReadOnlyList<TreeNode> full = await _walker.ActiveSubtreeAsync(docs, "docs", CancellationToken);
 
-        Assert.Equal(21, limited.Count);
+        Assert.Equal(6, limited.Count);
         Assert.Equal(41, full.Count);
     }
 

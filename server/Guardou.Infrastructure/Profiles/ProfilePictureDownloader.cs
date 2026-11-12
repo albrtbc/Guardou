@@ -8,6 +8,11 @@ internal sealed class ProfilePictureDownloader(HttpClient client)
 
     public async Task<byte[]> DownloadAsync(Uri source, CancellationToken cancellationToken)
     {
+        if (!PictureSourceRules.Permits(source))
+        {
+            throw new HttpRequestException($"The picture URL '{source}' does not use HTTPS.");
+        }
+
         using HttpResponseMessage response = await client.GetAsync(source, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
         if (response.Content.Headers.ContentLength > ProfilePictureLimits.MaximumBytes)

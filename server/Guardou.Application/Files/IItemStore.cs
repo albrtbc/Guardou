@@ -16,7 +16,11 @@ public interface IItemStore
 
     Task<IReadOnlyList<Item>> ChildrenAsync(Guid parentId, CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<Item>> ChildrenWithTrashAsync(Guid parentId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Item>> AncestryAsync(string ownerId, Guid id, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<Item>> SubtreeAsync(Guid rootId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<Item>> ActiveSubtreeAsync(Guid rootId, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Guid>> ChildFolderIdsAsync(IReadOnlyCollection<Guid> parentIds, CancellationToken cancellationToken);
 

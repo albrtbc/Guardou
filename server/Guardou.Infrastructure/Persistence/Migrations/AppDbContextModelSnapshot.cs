@@ -61,13 +61,21 @@ namespace Guardou.Infrastructure.Persistence.Migrations
                     b.Property<long?>("Trashed")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("Id");
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
 
-                    b.HasIndex("CreatedBy");
+                    b.HasKey("Id");
 
                     b.HasIndex("OwnerId")
                         .IsUnique()
                         .HasFilter("\"ParentId\" IS NULL");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("Trashed");
+
+                    b.HasIndex("CreatedBy", "Kind");
 
                     b.HasIndex("OwnerId", "Starred");
 
@@ -172,6 +180,9 @@ namespace Guardou.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<long>("Created")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("Expires")
                         .HasColumnType("INTEGER");
 
                     b.Property<Guid>("ItemId")

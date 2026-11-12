@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.12.0](https://github.com/GuardouApp/Guardou/compare/v0.11.0...v0.12.0) (2026-11-12)
+
+
+### Features
+
+* add an expiry date to share links ([#68](https://github.com/GuardouApp/Guardou/issues/68)) ([d54395d](https://github.com/GuardouApp/Guardou/commit/d54395da5d564b0e58828d99c94ac670c779755b))
+* drag the selected items into a folder to move them ([#58](https://github.com/GuardouApp/Guardou/issues/58)) ([34397ff](https://github.com/GuardouApp/Guardou/commit/34397ff15c054428357769bd2ec99cc9c2403a6f))
+
+
+### Bug Fixes
+
+* add normal preview tasks for anonymous share requests ([#64](https://github.com/GuardouApp/Guardou/issues/64)) ([51cdfc4](https://github.com/GuardouApp/Guardou/commit/51cdfc48efdd8a79fcbddcc4733d37902a5947f7))
+* normalize item names to Unicode NFC ([#72](https://github.com/GuardouApp/Guardou/issues/72)) ([de87cdc](https://github.com/GuardouApp/Guardou/commit/de87cdc2dc3b25782788614bfa12356eb061243c))
+* prevent a parent cycle from concurrent moves ([#60](https://github.com/GuardouApp/Guardou/issues/60)) ([89b9a8a](https://github.com/GuardouApp/Guardou/commit/89b9a8a21a2ab34416edb78a2be957189c434d6b))
+* refuse unsafe OIDC picture URLs ([#61](https://github.com/GuardouApp/Guardou/issues/61)) ([f9a7590](https://github.com/GuardouApp/Guardou/commit/f9a7590ef2bdbb6b13a547dc15cdec0f2fd00c23))
+* return 409 for item conflicts ([#71](https://github.com/GuardouApp/Guardou/issues/71)) ([ab9fd8b](https://github.com/GuardouApp/Guardou/commit/ab9fd8bbbf775b77bbb52aba413e5794d33774d1))
+
+
+### Performance Improvements
+
+* add item indexes and scope the recent items query ([#69](https://github.com/GuardouApp/Guardou/issues/69)) ([ce312a7](https://github.com/GuardouApp/Guardou/commit/ce312a7e4131e9b7476259418ba4859eb06b5bec))
+* give the file path to libvips for previews ([#66](https://github.com/GuardouApp/Guardou/issues/66)) ([a3ebf03](https://github.com/GuardouApp/Guardou/commit/a3ebf030a6f3eb00afb1d8188a173bb5f8cbfec6))
+* load ancestors and subtrees with one recursive query ([#70](https://github.com/GuardouApp/Guardou/issues/70)) ([2d1d35a](https://github.com/GuardouApp/Guardou/commit/2d1d35a9782ff93a1c5abc01a32103f53e4a52d5))
+
 ## [0.11.0](https://github.com/GuardouApp/Guardou/compare/v0.10.0...v0.11.0) (2026-11-09)
 
 

@@ -39,6 +39,16 @@ public sealed class SharesController(ItemSharing sharing, SharedItems shared, Di
         return sharing.ShareAsync(User.UserId(), id, Request.Origin(), cancellationToken);
     }
 
+    [HttpPut(ItemShareRoute + "/expiry", Name = "ChangeItemShareExpiry")]
+    [ProducesResponseType<ShareLink>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<ShareLink> ChangeItemShareExpiry(string id, ShareExpiry expiry, CancellationToken cancellationToken)
+    {
+        return sharing.ChangeExpiryAsync(User.UserId(), id, expiry, Request.Origin(), cancellationToken);
+    }
+
     [HttpDelete(ItemShareRoute, Name = "StopSharingItem")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]

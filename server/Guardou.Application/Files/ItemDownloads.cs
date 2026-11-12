@@ -54,10 +54,11 @@ public sealed class ItemDownloads
 
         List<Item> roots = await SelectedRootsAsync(userId, ids, cancellationToken);
         List<TreeNode> nodes = [];
+        CaseInsensitiveNames rootNames = new();
         long bytes = 0;
         foreach (Item item in roots)
         {
-            string name = item.IsRoot ? DefaultArchiveName : item.Name;
+            string name = rootNames.Claim(item.IsRoot ? DefaultArchiveName : item.Name);
             IReadOnlyList<TreeNode> subtree = await _tree.ActiveSubtreeAsync(item, name, _limits.MaximumEntries - nodes.Count, cancellationToken);
             nodes.AddRange(subtree);
             bytes += subtree.Sum(node => node.Item.Size);

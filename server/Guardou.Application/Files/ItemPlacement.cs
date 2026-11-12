@@ -25,13 +25,15 @@ internal sealed class ItemPlacement(IItemStore store, ShareCleanup shares, TimeP
             ConflictPolicy.Skip => null,
             ConflictPolicy.Rename => await FreeNameAsync(folder, name, cancellationToken),
             ConflictPolicy.Replace when source is null || !source.Contains(existing.Id) => await ReplaceAsync(existing, cancellationToken),
-            _ => throw new ItemConflictException(name),
+            _ => throw ItemConflictException.ForName(name),
         };
     }
 
     public static string ValidName(string name)
     {
-        return ItemName.IsValid(name) ? name : throw new InvalidItemRequestException($"The name '{name}' is not valid.");
+        return ItemName.TryNormalize(name) is { } normalized && ItemName.IsValid(normalized)
+            ? normalized
+            : throw new InvalidItemRequestException($"The name '{name}' is not valid.");
     }
 
     private async Task<string> FreeNameAsync(Item folder, string name, CancellationToken cancellationToken)
@@ -45,7 +47,7 @@ internal sealed class ItemPlacement(IItemStore store, ShareCleanup shares, TimeP
             }
         }
 
-        throw new ItemConflictException(name, $"No free name for '{name}' was found after {MaximumNumberedNames} attempts. Rename the item first.");
+        throw new ItemConflictException($"No free name for '{name}' was found after {MaximumNumberedNames} attempts. Rename the item first.");
     }
 
     private async Task<string> ReplaceAsync(Item existing, CancellationToken cancellationToken)

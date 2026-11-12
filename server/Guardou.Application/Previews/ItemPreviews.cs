@@ -23,7 +23,22 @@ public sealed class ItemPreviews
         _previewTasks = previewTasks;
     }
 
-    public async Task<Stream?> OpenAsync(string userId, string id, PreviewSize size, CancellationToken cancellationToken)
+    public Task<Stream?> OpenAsync(string userId, string id, PreviewSize size, CancellationToken cancellationToken)
+    {
+        return OpenAsync(userId, id, size, TaskPriority.High, cancellationToken);
+    }
+
+    internal Task<Stream?> OpenAnonymousAsync(string ownerId, string id, PreviewSize size, CancellationToken cancellationToken)
+    {
+        return OpenAsync(ownerId, id, size, TaskPriority.Normal, cancellationToken);
+    }
+
+    private async Task<Stream?> OpenAsync(
+        string userId,
+        string id,
+        PreviewSize size,
+        TaskPriority priority,
+        CancellationToken cancellationToken)
     {
         Item item = await FindPreviewableAsync(userId, id, cancellationToken);
         if (_cache.TryOpen(item.OwnerId, item.Id, size) is { } content)
@@ -36,7 +51,7 @@ public sealed class ItemPreviews
             throw new ItemNotFoundException($"The preview of the item '{id}' failed.");
         }
 
-        await _previewTasks.EnqueueAsync([item], TaskPriority.High, cancellationToken);
+        await _previewTasks.EnqueueAsync([item], priority, cancellationToken);
         return null;
     }
 

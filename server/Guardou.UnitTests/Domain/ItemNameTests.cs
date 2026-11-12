@@ -29,6 +29,13 @@ public sealed class ItemNameTests
     }
 
     [Fact]
+    public void NormalizesNamesToNfc()
+    {
+        Assert.Equal("relat\u00f3rio", ItemName.TryNormalize("relato\u0301rio"));
+        Assert.Null(ItemName.TryNormalize("broken\ud800"));
+    }
+
+    [Fact]
     public void RefusesLongNames()
     {
         Assert.False(ItemName.IsValid(new string('a', ItemName.MaximumLength + 1)));

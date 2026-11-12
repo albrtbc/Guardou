@@ -27,7 +27,7 @@ public sealed class ItemPlacementTests
         ItemConflictException error = await Assert.ThrowsAsync<ItemConflictException>(
             () => _placement.ResolveNameAsync(_tree.Root, "report.txt", ConflictPolicy.Rename, source: null, CancellationToken));
 
-        Assert.Equal("report.txt", error.Name);
+        Assert.Contains("'report.txt'", error.Message, StringComparison.Ordinal);
         Assert.Contains(ItemPlacement.MaximumNumberedNames.ToString(System.Globalization.CultureInfo.InvariantCulture), error.Message, StringComparison.Ordinal);
         Assert.Equal(ItemPlacement.MaximumNumberedNames + 1, _store.Calls);
     }
