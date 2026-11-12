@@ -169,6 +169,46 @@ public sealed class AuditTrailTests : SignedInTests
     }
 
     [Fact]
+    public async Task LogsEveryExpiryChangeOfAShareLinkWithoutTheToken()
+    {
+        ItemEntry file = await Client.UploadEntryAsync(ItemsApi.Root, "report.txt", "a");
+        string adminId = (await Client.FindUserAsync(TestServerFactory.AdminUsername)).Id;
+        DateTimeOffset expires = new DateTimeOffset(Factory.Time.GetUtcNow().UtcDateTime.Date, TimeSpan.Zero).AddDays(7);
+        _logs.Clear();
+
+        string token = await ShareAsync(file.Id);
+        HttpResponseMessage set = await Client.PutAsJsonAsync($"/api/items/{file.Id}/share/expiry", new ShareExpiry(expires), HttpClientExtensions.JsonOptions, CancellationToken);
+        HttpResponseMessage removed = await Client.PutAsJsonAsync($"/api/items/{file.Id}/share/expiry", new ShareExpiry(null), HttpClientExtensions.JsonOptions, CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, set.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, removed.StatusCode);
+        Assert.Equal([9030, 9034, 9034], Audit.Select(log => log.EventId.Id));
+        Assert.All(Audit, log => Assert.Equal(adminId, log.Properties["ActorId"]));
+        Assert.All(Audit, log => Assert.Equal(file.Id, log.Properties["ItemId"]));
+        Assert.All(Audit, log => Assert.Equal(Audit.First().Properties["ShareId"], log.Properties["ShareId"]));
+        Assert.Equal(
+            [expires.UtcDateTime.ToString("O", System.Globalization.CultureInfo.InvariantCulture), "never"],
+            AuditEvents(9034, 9034).Select(log => (string)log.Properties["Expires"]!));
+        Assert.DoesNotContain(_logs.Logs.SelectMany(entry => entry.Texts), text => text.Contains(token, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task DoesNotLogAnExpiryChangeThatIsRefused()
+    {
+        ItemEntry file = await Client.UploadEntryAsync(ItemsApi.Root, "report.txt", "a");
+        ItemEntry notShared = await Client.UploadEntryAsync(ItemsApi.Root, "private.txt", "b");
+        await ShareAsync(file.Id);
+        _logs.Clear();
+
+        HttpResponseMessage past = await Client.PutAsJsonAsync($"/api/items/{file.Id}/share/expiry", new ShareExpiry(Factory.Time.GetUtcNow().AddMinutes(-1)), HttpClientExtensions.JsonOptions, CancellationToken);
+        HttpResponseMessage withoutLink = await Client.PutAsJsonAsync($"/api/items/{notShared.Id}/share/expiry", new ShareExpiry(Factory.Time.GetUtcNow().AddDays(1)), HttpClientExtensions.JsonOptions, CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, past.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, withoutLink.StatusCode);
+        Assert.Empty(Audit);
+    }
+
+    [Fact]
     public async Task LogsDirectSharesAddedAndRemoved()
     {
         ItemEntry file = await Client.UploadEntryAsync(ItemsApi.Root, "report.txt", "a");

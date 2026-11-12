@@ -13,6 +13,7 @@ public sealed partial class AuditLog
     public const string Category = "Guardou.Audit";
 
     private const int MaxTextLength = 128;
+    private const string NoExpiry = "never";
 
     private readonly ILogger _logger;
     private readonly IAuditContext _context;
@@ -110,6 +111,13 @@ public sealed partial class AuditLog
     {
         string item = ItemId.Format(itemId);
         LogShareLinkRevoked(ActorId, ClientIp, shareId, item);
+    }
+
+    public void ShareLinkExpiryChanged(Guid shareId, Guid itemId, DateTimeOffset? expires)
+    {
+        string item = ItemId.Format(itemId);
+        string expiry = expires is { } at ? at.UtcDateTime.ToString("O", CultureInfo.InvariantCulture) : NoExpiry;
+        LogShareLinkExpiryChanged(ActorId, ClientIp, shareId, item, expiry);
     }
 
     public void DirectShareAdded(Guid itemId, string recipientId)
@@ -210,6 +218,9 @@ public sealed partial class AuditLog
 
     [LoggerMessage(EventId = 9033, EventName = "DirectShareRemoved", Level = LogLevel.Information, Message = "Item {ItemId} was unshared from user {RecipientId} by {ActorId} from {ClientIp}.")]
     private partial void LogDirectShareRemoved(string? actorId, string? clientIp, string itemId, string recipientId);
+
+    [LoggerMessage(EventId = 9034, EventName = "ShareLinkExpiryChanged", Level = LogLevel.Information, Message = "Share link {ShareId} for item {ItemId} expiry set to {Expires} by {ActorId} from {ClientIp}.")]
+    private partial void LogShareLinkExpiryChanged(string? actorId, string? clientIp, Guid shareId, string itemId, string expires);
 
     [LoggerMessage(EventId = 9040, EventName = "SharedItemAccessed", Level = LogLevel.Information, Message = "Share {ShareId} item {ItemId} accessed ({Action}) from {ClientIp}, actor {ActorId}.")]
     private partial void LogSharedItemAccessed(string? actorId, Guid shareId, string itemId, ShareAccessKind action, string? clientIp);

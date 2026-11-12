@@ -1,15 +1,20 @@
 using System.Net;
 using System.Net.Http.Json;
+using Guardou.Application.Audit;
 using Guardou.Application.Files;
 using Guardou.Application.Shares;
 using Guardou.Application.Users;
 using Guardou.Domain.Settings;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Guardou.IntegrationTests;
 
 public sealed class SharesTests : SignedInTests
 {
     private const string LinkPrefix = "http://localhost/s/";
+
+    private readonly CapturingLoggerProvider _logs = new();
 
     [Fact]
     public async Task SharesAFileWithOneLink()
@@ -359,6 +364,56 @@ public sealed class SharesTests : SignedInTests
     }
 
     [Fact]
+    public async Task ClosesEveryAnonymousRouteOfAnExpiredLinkWithoutAuditingThem()
+    {
+        ItemEntry docs = await Client.CreateFolderEntryAsync(ItemsApi.Root, "docs");
+        ItemEntry image = await ItemsApi.ReadEntryAsync(await Client.UploadBytesAsync(docs.Id, "wide.png", PreviewsApi.Png(800, 400)));
+        await Client.WaitForPreviewAsync(image.Id);
+        await Client.ReplacePictureAsync((await Client.FindUserAsync(TestServerFactory.AdminUsername)).Id, PreviewsApi.Png(64, 64));
+        string token = TokenOf(await ShareAsync(docs.Id));
+        string[] routes =
+        [
+            $"/api/shares/{token}",
+            $"/api/shares/{token}/items/{docs.Id}",
+            $"/api/shares/{token}/items/{image.Id}",
+            $"/api/shares/{token}/items/{image.Id}/download",
+            $"/api/shares/{token}/items/{image.Id}/view",
+            $"/api/shares/{token}/items/{image.Id}/preview?size=thumbnail",
+            $"/api/shares/{token}/items/{image.Id}/creator/picture",
+            $"/api/shares/{token}/items/{docs.Id}/download",
+        ];
+        DateTimeOffset now = Factory.Time.GetUtcNow();
+        DateTimeOffset expires = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, TimeSpan.Zero).AddDays(1);
+        await ChangeExpiryAsync(docs.Id, expires);
+        using HttpClient anonymous = Factory.CreateClient();
+        using HttpClient bob = await SignInAsBobAsync();
+
+        List<HttpStatusCode> before = [];
+        foreach (string route in routes)
+        {
+            before.Add((await anonymous.GetAsync(route, CancellationToken)).StatusCode);
+        }
+
+        Assert.Contains(_logs.Logs, log => log.Category == AuditLog.Category && log.EventId.Id == 9040);
+        Assert.Contains(_logs.Logs, log => log.Category == AuditLog.Category && log.EventId.Id == 9041);
+        Factory.Time.Advance(TimeSpan.FromDays(2));
+        _logs.Clear();
+        List<HttpStatusCode> after = [];
+        foreach (string route in routes)
+        {
+            after.Add((await anonymous.GetAsync(route, CancellationToken)).StatusCode);
+        }
+
+        await bob.RefreshAntiforgeryTokenAsync();
+        HttpResponseMessage join = await bob.PostAsync($"/api/shares/{token}/join", null, CancellationToken);
+
+        Assert.All(before, status => Assert.Equal(HttpStatusCode.OK, status));
+        Assert.All(after, status => Assert.Equal(HttpStatusCode.NotFound, status));
+        Assert.Equal(HttpStatusCode.NotFound, join.StatusCode);
+        Assert.DoesNotContain(_logs.Logs, log => log.Category == AuditLog.Category && log.EventId.Id is 9040 or 9041);
+    }
+
+    [Fact]
     public async Task RemovesTheExpiryDate()
     {
         ItemEntry file = await Client.UploadEntryAsync(ItemsApi.Root, "report.txt", "a");
@@ -386,6 +441,15 @@ public sealed class SharesTests : SignedInTests
 
         Assert.Equal(HttpStatusCode.NotFound, notShared.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, past.StatusCode);
+    }
+
+    private protected override TestServerFactory CreateFactory()
+    {
+        return new TestServerFactory
+        {
+            Settings = new Dictionary<string, string> { ["Logging:LogLevel:Guardou.Audit"] = "Debug" },
+            TestServices = services => services.AddLogging(logging => logging.AddProvider(_logs)),
+        };
     }
 
     private Task<HttpResponseMessage> ChangeExpiryAsync(string id, DateTimeOffset? expires)

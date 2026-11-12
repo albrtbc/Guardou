@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Http.Json;
+using Guardou.Application.Shares;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -66,6 +68,17 @@ public sealed class AnonymousAccessTests(TestServerFactory factory) : IClassFixt
         await client.RefreshAntiforgeryTokenAsync();
 
         HttpResponseMessage response = await client.PostAsync($"/api/shares/{Token}/join", content: null, CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RefusesToChangeTheExpiryOfAShareWithoutASession()
+    {
+        using HttpClient client = factory.CreateClient();
+        await client.RefreshAntiforgeryTokenAsync();
+
+        HttpResponseMessage response = await client.PutAsJsonAsync($"/api/items/{Token}/share/expiry", new ShareExpiry(null), HttpClientExtensions.JsonOptions, CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

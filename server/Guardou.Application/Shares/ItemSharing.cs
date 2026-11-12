@@ -65,6 +65,7 @@ public sealed class ItemSharing
             ?? throw new ShareNotFoundException($"The item '{id}' is not shared.");
         share.ExpireAt(expiry.Expires);
         await _shares.SaveAsync(cancellationToken);
+        _audit.ShareLinkExpiryChanged(share.Id, item.Id, share.Expires);
         return await LinkOfAsync(share, requestOrigin, cancellationToken);
     }
 

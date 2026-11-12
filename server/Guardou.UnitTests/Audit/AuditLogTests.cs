@@ -139,6 +139,38 @@ public sealed class AuditLogTests
     }
 
     [Fact]
+    public void LogsAnExpiryChangeWithTheActorTheItemAndTheDate()
+    {
+        Guid shareId = Guid.CreateVersion7();
+        Guid itemId = Guid.CreateVersion7();
+        DateTimeOffset expires = new(2027, 1, 2, 3, 4, 5, TimeSpan.FromHours(2));
+
+        _audit.Log.ShareLinkExpiryChanged(shareId, itemId, expires);
+
+        LogRecord record = Assert.Single(Records);
+        Assert.Equal(9034, record.EventId.Id);
+        Assert.Equal("ShareLinkExpiryChanged", record.EventId.Name);
+        Assert.Equal(LogLevel.Information, record.Level);
+        Assert.Equal(TestAudit.Actor, record.Properties["ActorId"]);
+        Assert.Equal(TestAudit.Ip, record.Properties["ClientIp"]);
+        Assert.Equal(shareId, record.Properties["ShareId"]);
+        Assert.Equal(ItemId.Format(itemId), record.Properties["ItemId"]);
+        Assert.Equal("2027-01-02T01:04:05.0000000Z", record.Properties["Expires"]);
+        Assert.Contains("expiry set to 2027-01-02T01:04:05.0000000Z by", record.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LogsARemovedExpiryAsNever()
+    {
+        _audit.Log.ShareLinkExpiryChanged(Guid.CreateVersion7(), Guid.CreateVersion7(), expires: null);
+
+        LogRecord record = Assert.Single(Records);
+        Assert.Equal(9034, record.EventId.Id);
+        Assert.Equal("never", record.Properties["Expires"]);
+        Assert.Contains("expiry set to never by", record.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void UsesTheAuditCategory()
     {
         Assert.Equal("Guardou.Audit", AuditLog.Category);
